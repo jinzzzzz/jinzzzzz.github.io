@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang>
+  <head><meta name="generator" content="Hexo 3.8.0">
+    
+<meta name="google-site-verification" content="DwDg4EuywHWNZUkTC7sG0WGv_UQekM4uRtOoaGuDJHc">
+<meta name="baidu-site-verification" content="hkLiBHH93D">
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,minimum-scale=1,maximum-scale=1">
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+  <link rel="alternate" href="/default" title="JinJin's Blog">
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=1.1">
+
+
+
+<link rel="canonical" href="https://jinzzzzz.github.io/about/技术总结0306.html">
+
+
+<meta name="description" content="Spring 5IOCIOC是什么，IOC是控制反转，所谓控制反转，就是我们原来代码中自己创建的对象交由容器创建，由我们自己控制对象的创建和销毁转变为第三方，也就是spring的ioc容器去控制这个对象的创建；spring会扫描需要的路径下面的bean都注册到ioc容器中； 那么我们的对象不会去IOC容器中查找自己需要的依赖的类，而是IOC容器在初始化的时候将对象中需要依赖的类注入，也就是依赖注入">
+<meta property="og:type" content="website">
+<meta property="og:title" content="JinJin&#39;s Blog">
+<meta property="og:url" content="https://jinzzzzz.github.io/about/技术总结0306.html">
+<meta property="og:site_name" content="JinJin&#39;s Blog">
+<meta property="og:description" content="Spring 5IOCIOC是什么，IOC是控制反转，所谓控制反转，就是我们原来代码中自己创建的对象交由容器创建，由我们自己控制对象的创建和销毁转变为第三方，也就是spring的ioc容器去控制这个对象的创建；spring会扫描需要的路径下面的bean都注册到ioc容器中； 那么我们的对象不会去IOC容器中查找自己需要的依赖的类，而是IOC容器在初始化的时候将对象中需要依赖的类注入，也就是依赖注入">
+<meta property="og:locale" content="default">
+<meta property="og:image" content="https://images0.cnblogs.com/blog/88420/201402/181351206012825.png">
+<meta property="og:updated_time" content="2019-03-06T15:22:55.881Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="JinJin&#39;s Blog">
+<meta name="twitter:description" content="Spring 5IOCIOC是什么，IOC是控制反转，所谓控制反转，就是我们原来代码中自己创建的对象交由容器创建，由我们自己控制对象的创建和销毁转变为第三方，也就是spring的ioc容器去控制这个对象的创建；spring会扫描需要的路径下面的bean都注册到ioc容器中； 那么我们的对象不会去IOC容器中查找自己需要的依赖的类，而是IOC容器在初始化的时候将对象中需要依赖的类注入，也就是依赖注入">
+<meta name="twitter:image" content="https://images0.cnblogs.com/blog/88420/201402/181351206012825.png">
+
+
+<link rel="stylesheet" type="text/css" href="/css/style.css?v=1.1">
+<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+
+
+
+
+
+
+<script type="text/javascript">
+  var themeConfig = {
+    fancybox: {
+      enable: false
+    },
+  };
+</script>
+
+
+
+
+  
+
+
+
+
+
+<!--百度统计-->
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?b733e1eaeacbf8f87d3be047f28c3973";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+    <title>  - JinJin's Blog </title>
+  </head>
+
+  <body>
+    <div id="page">
+      <header id="masthead"><div class="site-header-inner">
+    <h1 class="site-title">
+        <a href="/." class="logo">JinJin's Blog</a>
+    </h1>
+
+    <nav id="nav-top">
+        
+            <ul id="menu-top" class="nav-top-items">
+                
+                    <li class="menu-item">
+                        <a href="/archives">
+                            
+                            
+                                Archives
+                            
+                        </a>
+                    </li>
+                
+                    <li class="menu-item">
+                        <a href="/about">
+                            
+                            
+                                About
+                            
+                        </a>
+                    </li>
+                
+            </ul>
+        
+  </nav>
+</div>
+
+      </header>
+      <div id="content">
+        
+    <div id="primary">
+        <article class="post">
+            <header class="post-header">
+                <h1 class="post-title">
+                    
+                </h1>
+            </header>
+            <div class="post-content">
+                <h1 id="Spring-5"><a href="#Spring-5" class="headerlink" title="Spring 5"></a>Spring 5</h1><h2 id="IOC"><a href="#IOC" class="headerlink" title="IOC"></a>IOC</h2><p>IOC是什么，IOC是控制反转，所谓控制反转，就是我们原来代码中自己创建的对象交由容器创建，由我们自己控制对象的创建和销毁转变为第三方，也就是spring的ioc容器去控制这个对象的创建；spring会扫描需要的路径下面的bean都注册到ioc容器中；</p>
+<p>那么我们的对象不会去IOC容器中查找自己需要的依赖的类，而是IOC容器在初始化的时候将对象中需要依赖的类注入，也就是依赖注入（DI），那么我们就需要一种描述让它知道对象和创建的对象之间的对应关系，也就是配置文件或者是注解；</p>
+<h2 id="AOP"><a href="#AOP" class="headerlink" title="AOP"></a>AOP</h2><p>AOP是什么，AOP是面向切面编程，对于一些重复的代码可以横切剥离出来，将功能分开；在不修改原代码的情况下给程序增加功能；声明式事务就是AOP实现；实现的原理就是动态代理；</p>
+<ul>
+<li>切面 一个关注点，可以关注多个地方 多个模块</li>
+<li>连接点 被拦截到的点，spring只能拦截方法，实际也可以是字段或者构造器</li>
+<li>切入点 具体的切入点</li>
+<li>目标对象 代理到的具体对象，实际操作的是TargetObject动态代理类</li>
+<li>AOP代理 JDK或者是CGLIB</li>
+<li>织入 生成代理对象把切面的逻辑放入的过程，也就是把切面逻辑应用到目标对象来创建新的代理对象</li>
+<li>引入 向现有的类添加新方法</li>
+</ul>
+<h2 id="MVC"><a href="#MVC" class="headerlink" title="MVC"></a>MVC</h2><p>初始化阶段时，保存url和方法的对应关系为一个Handler；然后在请求处理阶段由DispatcherServlet接收请求，然后通过HandlerMapping找到url对应的Handler，Handler中保存了类信息及方法信息；找到Handler以后，通过HandlerAdapter对方法的参数进行动态匹配及类型转换后返回一个ModelAndView逻辑视图，然后由ViewResolver解析后返回；</p>
+<p><strong>Spring5新特性</strong></p>
+<p>JDK8反射获取方法名称  响应式编程reactive   函数式 </p>
+<h1 id="TCP-IP"><a href="#TCP-IP" class="headerlink" title="TCP/IP"></a>TCP/IP</h1><p>三次握手 </p>
+<p>客户端发送ack=0 seq=x x就是客户端的随机数</p>
+<p>服务端响应seq=y  ack=x+1 y是服务端随机数</p>
+<p>客户端响应ack=y+1</p>
+<p>四次挥手</p>
+<p>客户端发送seq=x+2 ack=y+1</p>
+<p>服务端响应ack=x+3 (注 数据传输过程中为ack=x+2)</p>
+<p>服务端在传输完毕数据后确认关闭 seq=y+1</p>
+<p>客户都接受关闭请求ack=y+2</p>
+<p>tcp状态</p>
+<p><img src="https://images0.cnblogs.com/blog/88420/201402/181351206012825.png" alt="img"></p>
+<p>服务端开启监听状态 LISTEN </p>
+<p>客户端发送请求等待响应状态 SYN-SENT</p>
+<p>SYN-RECEIVED  对连接请求确认</p>
+<p>ESTABLISHED 打开的连接，可以进行数据传输</p>
+<p>FIN-WAIT-1 客户端发送中断连接请求，等待响应</p>
+<p>FIN-WAIT-2  等待远程中断请求</p>
+<p>CLOSE-WAIT  等待本地的中断</p>
+<p>LAST-ACK 服务端向客户端发送确认关闭请求</p>
+<p>TIME-WAIT 等待一段时间确保服务端收到请求</p>
+<p>CLOSED  关闭连接</p>
+<p>五层模型及滑动窗口协议</p>
+<p>应用层 表示具体的应用 HTTP</p>
+<p>传输层 建立了双方的连接 tcp udp层</p>
+<p>网络层 通过ip建立两个节点间的连接 ip层</p>
+<p>数据链路层 传输数据的协议介质 光纤</p>
+<p>物理层 最终的物理介质</p>
+<p>osi七层模型 </p>
+<p>表示层 加密和会话层 SQL</p>
+<h1 id="HTTPS"><a href="#HTTPS" class="headerlink" title="HTTPS"></a>HTTPS</h1><p>客户端向服务端发送请求</p>
+<p>服务端返回证书</p>
+<p>客户端验证证书并通过证书中公钥生成随机数密钥</p>
+<p>服务端私钥验证客户端密钥并生成使用客户端公钥加密后的密钥</p>
+<p>客户端还原服务端密钥开始传输</p>
+<h1 id="Zookeeper"><a href="#Zookeeper" class="headerlink" title="Zookeeper"></a>Zookeeper</h1><p>zookeeper是什么，zookeeper是高性能、高可用一个分布式协调服务，具有严格的顺序访问；一般使用zookeeper作为服务发现和服务注册的框架，一个是Watcher机制可以动态感知服务的上下线。</p>
+<p>zookeeper 是树型节点，节点可以持久化、临时、有序，同级节点唯一</p>
+<p>Zookeeper内部通讯使用的ZAB协议分为两个阶段 - Leader Election（领导选举）和Atomic Broadcast（原子广播）</p>
+<p>服务端启动时进行选举，每个进行观望状态的节点都会将自己作为leader发出一个投票，投票信息内容包括zxid和epoch及myid；每个节点接收到投票后，与自己的投票信息做判断，首先判断epoch是否是最新的，然后优先检查zxid的大小，如果大小相等则判断myid；判断完成后继续发送判断得胜的投票信息；如果集群中过半节点收到相同的投票信息，则确定了leader信息，然后根据信息改变自己的节点状态为Follower或者是leader；</p>
+<p>原子广播就是确定leader后，后进入的zk节点进行leader的数据同步，类似2pc提交方式；</p>
+<h3 id="Paxos算法"><a href="#Paxos算法" class="headerlink" title="Paxos算法"></a>Paxos算法</h3><p>２PC</p>
+<h1 id="Dubbo"><a href="#Dubbo" class="headerlink" title="Dubbo"></a>Dubbo</h1><p>dubbo是一个服务治理框架</p>
+<p>服务发布过程，dubbo通过spring的扩展实现服务发布，spring初始化容器后会把配置信息存入ServerConfig中，ServerConfig继承了InitiallizingBean，在bean初始化后会执行afterPropertiesSet方法，此方法中执行服务发布过程；首先检查配置文件中内容，然后选用服务端口；然后生成URL对象，url中包含很多信息，比如版本、名称、group、服务方法名称等等；然后会生成远程的服务代理对象Invoker，dubbo框架使用ProxyFactory生成服务代理，默认使用Javaassist生成，也可以改为JDK动态代理；Invoker是代理了具体的服务对象，当Invoker对象的invoke方法被调用时，就会调用到具体服务对象的方法中；然后生成netty服务的监听，绑定netty的io处理事件；然后把服务注册到注册中心；</p>
+<p>服务引入过程， ReferenceBean继承了FactoryBean接口，当ReferenceBean被注入的时候，会调用getObject方法，然后同样的也是创建一个Invoker，Invoker去调用具体的netty服务发送消息，创建代理类代理接口，调用Invoker。</p>
+<p>服务调用过程，通过代理对象发起请求，对象进行序列化然后编码，服务端接收后解码，将请求派发到线程池中，执行后通过编号返回，同步是框架调用get方法进行等待，异步需手动调用。</p>
+<p>负载均衡算法：加权随机算法，最小活跃数负载，一致性hash，加权轮询</p>
+<p>容错机制：默认failover 自动重试切换其他服务器2次，failsafe 失败安全打印异常不会抛出异常，failfast 快速失败，failback 失败后定时重试，forking  多个服务请求，广播每个服务通知，循环结束一个报错抛出；</p>
+<p><strong>微服务怎么划分 划分粒度</strong></p>
+<p>微服务是按照业务进行划分的，不同的业务适用于不同的微服务，例如用户中心只关心用户相关，设备中心关心设备相关，服务的接口则按照最大粒度划分，及每个方法都代表了一个功能，而不是功能的一个步骤，否则将带来分布式事务的问题，并且避免过于抽象的接口。松耦合，修改一个微服务跟其他微服务无关；</p>
+<p><strong>微服务间数据一致性问题</strong></p>
+<p>这就是分布式事务，通过kafka消息中间件实现数据的最终一致性，或者TCC</p>
+<p><strong>设计一个春晚抢红包架构</strong></p>
+<p>首先是防刷模块，基于nginx+lua实现网关，对相同ip进行请求数量统计，当相同ip请求数量超过阈值，列入黑名单，限制访问次数。可以适当的进行服务降级，例如只有一半请求能进入队列，另一半没有抢到红包。</p>
+<p>如果红包数量有限，可以使用redis计数器；</p>
+<p>redis或者消息中间件实现排队的队列</p>
+<p>春晚抢红包，瞬时流量很大，红包数量是有限的，所以可以给请求颁发令牌，令牌占用队列数，队列就是红包的数量，抢红包过程中，挡住流量高峰，筛选合法用户进入排队；</p>
+<p><strong>RPC和HTTP的区别</strong></p>
+<p>RPC保持一个长连接，HTTP是短连接，HTTP接口需要文档定义返回及请求方式，RPC一般为引入jar包</p>
+<p><strong>HTTP长连接和短连接</strong></p>
+<p>HTTP1.0是短连接 每次会话都需要三次握手建立tcp连接，1.1支持长连接，在一个tcp连接上面可以传送多个http请求和响应，减少了建立连接和关闭连接的消耗，排队请求，2.0多路复用。</p>
+<h2 id="SPI"><a href="#SPI" class="headerlink" title="SPI"></a>SPI</h2><p>SPI是一种服务发现机制，是动态的替换，定义一个规范由第三方实现，是一个热插拔式的扩展手段；</p>
+<h1 id="中间件"><a href="#中间件" class="headerlink" title="中间件"></a>中间件</h1><p>什么是消息中间件，利用高效可靠的传递机制进行和平台无关的数据交流，并可以在分布式环境下扩展；</p>
+<p>消息中间件可以解耦、削峰、异步、限流</p>
+<h2 id="kafka"><a href="#kafka" class="headerlink" title="kafka"></a>kafka</h2><p>kafka 服务端使用push模式将消息发送到broker，客户端通过监听使用pull模式从broker 订阅并消费信息，通过zk协调；</p>
+<p>kafka消息存放在topic下面的parttion中，每个topic是一个消息集合；每个topc每个消费者只能消费一次；每个topic可以划分多个分区，每个消息被添加到分区时会分配一个offset，这个就是这个分区内这条消息的唯一编号，消费者通过具体的分区消费数据；</p>
+<p>kafka消息文件的存储分为两个，一个Index一个data；</p>
+<p>kafka高可用副本</p>
+<p>kafka的每个topc都可以创建多个分区，并且分区可以均匀的分布在集群的各个节点下，但是如果每个分区都只有一个，那么当分区所在的服务出现问题时，这部分分区就无法消费了，所以kafka为了提高分区可靠性通过副本来进行冗余备份；</p>
+<p>每个分区都可以创建多个副本，在副本的集合中会有一个leader副本，所有的读写请求由leader处理，其他副本都作为follower副本，follower副本会从leader副本同步消息日志，所以副本集是一个一主多从的关系；一般情况下，同一个分区的副本会分布在不同的服务器上，这样当leader节点出现故障后，可以重新选举leader对外提供服务；提高集群可用性；</p>
+<p>服务端发送消息时，通过zk找到leader副本然后发送写请求，请求到达leader副本后，follower副本会从leader副本拉取数据，这个过程会有延迟，在阈值内可以容忍；但是如果follower副本同步数据太慢或者出现网络异常时，leader副本会把follower副本踢出ISR集合，这个集合是kafka维护的与ledaer副本同步的高效率的follower副本并且是可用的消息数量和ledaer差不多；</p>
+<p>每个副本对象有两个属性,leo和hw       leo是日志末端位移，hw是水位</p>
+<p>用户只能拉取hw水位之前的数据，leader副本是取isr副本集合里面最小的leo为hw，也就是说所有副本都同步消息之后用户才能查询到该条消息；</p>
+<h2 id="Redis"><a href="#Redis" class="headerlink" title="Redis"></a>Redis</h2><p><strong>redis数据结构</strong></p>
+<p>简单字符串类型string，存储各个形式的字符串，内部使用sds存储</p>
+<p>sds简单字符串类型分配空间，字符串长度小于1M时，扩容时空间翻倍，超过1M，则扩容1M，len为字符串长度，实际长度会高于字符串长度，剩下的空间可以进行分配。sds是二进制安全的，取代C的字符串，传统的C字符串是ASCLL，遇到\0结尾就会认为到达末尾，因此，如果存储其他二进制文件则会被截断，就不安全；sds的buf定义为字节数组，会读到len长度才会结束，所以是二进制安全的；</p>
+<p>sds的优点就是可动态扩展内存，二进制安全，快速遍历字符串和与c字符串兼容，确定就是动态扩容内存可能不够</p>
+<p>列表类型list，可以存储一个有序的字符串列表，内部使用双向链表实现，所以可以当队列使用</p>
+<p>hash类型，存储一个简单属性的对象，对象的各个属性都为string，可以存对象</p>
+<p>无序集合类型set，元素不允许重复，用于并集和交集</p>
+<p>有序集合sorted-set ，内部跳跃表，成绩排序</p>
+<p><strong>redis缓存过期策略</strong></p>
+<p>消极方法，获取key时发现已经失效则删除；积极方法，周期选择20个有超时时间的key，删除已经过期的key，如果超过25%的key被删除，则重复执行；</p>
+<p>当内存容量不足时，redis默认会拒绝其他请求，申请内存的请求会报错，但是可以更改为其他内存回收策略</p>
+<ul>
+<li>allkeys-lru：最少请求的数据删除</li>
+<li>allkeys-random：随机删除</li>
+<li>volatile-random：从设置了过期时间的key中随机删除</li>
+<li>volatile-lru：从设置了过期时间的key中最少请求的数据删除</li>
+<li>volatile-ttl：删除快过期的数据</li>
+</ul>
+<p><strong>redis单线程</strong></p>
+<p>redis为嘛这么快，因为他是基于内存进行操作的，cpu不是redis 的瓶颈，内存和网络才是，使用多路复用IO；</p>
+<p><strong>缓存雪崩和缓存击穿</strong></p>
+<p>缓存雪崩是值缓存在同一时刻同时失效，让大量请求直接到达db，造成数据库崩溃；</p>
+<p>解决方式：</p>
+<ol>
+<li>缓存取不到数据后进入队列进行限流</li>
+<li>将缓存失效时间分散</li>
+<li>保证缓存服务器的高可用</li>
+</ol>
+<p>缓存击穿是指查询不存在的数据，如果查询不到，可以设置一个缓存默认值稍后在查询，或者对缓存的key进行过滤，不符合规则的请求进行拒绝，可以采用布隆过滤器；</p>
+<p><strong>持久化方式</strong></p>
+<p>默认采用RDB方式进行持久化存储，符合一定条件时，保存快照，创建一个子进程进行，最后一次持久化后的数据可能会丢失。根据配置方式或者命令后会保存。</p>
+<p>也可以开启AOF方式进行持久化，AOP可以将每一次redis的写命令保存。</p>
+<p><strong>Reids集群</strong></p>
+<p>主从采用哨兵选举master，哨兵使用raft选举内部的leader。</p>
+<p>Redis Cluster</p>
+<p>一般在客户端做redis的分片，通过hash，但是维护成本较高，增加或移除节点比较麻烦，redis无中心化集群比较方便。</p>
+<p>一个Redis Cluster由多个Redis节点构成。不同节点的数据没有交集，每个节点对应一个分片，每个节点都是主从架构；</p>
+<p>分布式把分区分散为一个固定范围内的槽，每个节点对应一个范围；新增一个节点从其他节点取出一部分的槽；</p>
+<h2 id="Mongodb"><a href="#Mongodb" class="headerlink" title="Mongodb"></a>Mongodb</h2><p>Nosql就是说非关系型数据库，这类数据存储不需要固定的模型，容易横向扩展；</p>
+<h2 id="Nginx"><a href="#Nginx" class="headerlink" title="Nginx"></a>Nginx</h2><p>反向代理服务器并且可以对服务端做负载均衡，Keepalived实现高可用，nginx+lua可以实现网关</p>
+<h2 id="Netty"><a href="#Netty" class="headerlink" title="Netty"></a>Netty</h2><p>BIO NIO NIOReactor模式</p>
+<p>NIO Channel   Buffer  Selector</p>
+<p>Netty Channel EventLoop</p>
+<h2 id="Hystrix"><a href="#Hystrix" class="headerlink" title="Hystrix"></a>Hystrix</h2><p>服务熔断，配置调用超时时间，每个依赖分配线程池或者是信号灯，线程池已满了就拒绝连接；</p>
+<p>隔离机制 线程池隔离，信号量隔离，</p>
+<h1 id="Java基础"><a href="#Java基础" class="headerlink" title="Java基础"></a>Java基础</h1><h2 id="对象"><a href="#对象" class="headerlink" title="对象"></a>对象</h2><ol>
+<li><p>创建阶段</p>
+<p>为对象分配内存空间，开始构造对象，从父类到子类进行初始化块的代码执行，父类成员变量初始化以及调用构造方法，子类成员变量初始化调用构造方法。</p>
+</li>
+<li><p>应用阶段</p>
+<p>对象被引用</p>
+</li>
+<li><p>不可见阶段</p>
+<p>程序运行超出对象的作用域</p>
+<p>对象处于不可见阶段时，说明程序本身不再持有该对象的不论什么强引用，尽管该这些引用仍然是存在着的。</p>
+</li>
+<li><p>不可达阶段</p>
+<p>对象处于不可达阶段是指该对象不再被不论什么强引用所持有。</p>
+</li>
+<li><p>收集阶段</p>
+<p>垃圾收集器对不可达对象进行收集</p>
+</li>
+<li><p>终结阶段</p>
+<p>垃圾收集器将不可达对象空间回收</p>
+</li>
+<li><p>对象空间重新分配阶段</p>
+<p>原对象空间分配</p>
+</li>
+</ol>
+<p><strong>单例模式</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Singleton</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">SingletonHolder</span> </span>&#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Singleton INSTANCE = <span class="keyword">new</span> Singleton();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">Singleton</span> <span class="params">()</span></span>&#123;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> Singleton <span class="title">getInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> SingletonHolder.INSTANCE;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>spring bean生命周期</p>
+<p>执行bean构造，注入属性，setBeanName，setBeanFactory，afterPropertiesSet，调用指定初始化方法</p>
+<h2 id="集合"><a href="#集合" class="headerlink" title="集合"></a>集合</h2><p>HashMap结构为数组+链表+红黑树</p>
+<p>put hash 插入数组位置，位置已经有数组判断是否相等，相等替换，不相等添加链表，链表长度为8转换红黑树；</p>
+<p>ConccurentHashMap 1.7 分段锁 1.8数据迁移协助扩容 cas</p>
+<p>java异常受检异常和非受检异常</p>
+<p>java四种引用 强、软、弱、虚</p>
+<p>数组是将元素在连续的内存中存放，每个元素占用内存相同，可以通过下标迅速访问到数组中的任何元素，如果要增加一个元素，则要移动其他元素，删除也是同理；</p>
+<p>链表是根据元素的指针关联到一起的，一个是存储数据的区域，一个是存储下一个元素的引用，如果访问链表中一个元素，则需要从头开始一个一个向下面找；但是增加和删除比较容易；</p>
+<p><strong>WeakHashMap</strong> 弱引用的map</p>
+<h2 id="结构"><a href="#结构" class="headerlink" title="结构"></a>结构</h2><p><strong>如何判断链表有环</strong></p>
+<p>穷举遍历判断，hash判断，快慢指针</p>
+<h1 id="并发"><a href="#并发" class="headerlink" title="并发"></a>并发</h1><h2 id="线程状态"><a href="#线程状态" class="headerlink" title="线程状态"></a>线程状态</h2><p>线程初始化时，NEW状态，启动后就是RUNNABLED运行状态，需要同步时是BLOCKED阻塞状态，等待时是WAITING等待状态，TIME_WAITING是超时等待状态，线程终止状态TERMINATED；</p>
+<p>5个状态，新建、就绪、运行、阻塞、死亡</p>
+<p><strong>让线程阻塞</strong></p>
+<p>join sleep wait <strong>juc</strong></p>
+<p><strong>高并发项目技术</strong></p>
+<p>集群、负载、分流、限流、熔断、分库分表、分布式、缓存、异步化、多线程，静态化页面，限制请求数、令牌桶，网关层面，减少数据库IO；</p>
+<p>秒杀设计，请求尽量在上层进行拦截，缓存；静态页面，不断刷新，网关拦截</p>
+<h2 id="synchronized"><a href="#synchronized" class="headerlink" title="synchronized"></a>synchronized</h2><p>锁原理，java每个对象都有对象头，对象在内存中的布局为对象头、实例数据和对其填充；锁对象存储在对象头Mark Word中。</p>
+<p>每个java对象都有一个Monitor监视器；</p>
+<p>偏向锁，只有一个线程获得锁；轻量级锁，对锁进行自旋竞争，如果有多线程同时竞争，锁膨胀；重量级锁通过队列实现；</p>
+<p>内存交互操作</p>
+<p>lock、unlock、read、load加载、use使用、assign赋值、store存储、write写入</p>
+<p><strong>synchronized和lock区别</strong></p>
+<p>synchronized是java关键字，lock是一个接口，主要实现有重入锁和重入读写锁；</p>
+<p>加了synchronized关键字的代码会一直阻塞知道获取锁为止，重入锁可以在等待一段时间后退出；</p>
+<h2 id="AQS"><a href="#AQS" class="headerlink" title="AQS"></a>AQS</h2><p>AQS提供了一个FIFO队列，一般使用继承来完成功能；独占和共享模式；</p>
+<h2 id="线程池"><a href="#线程池" class="headerlink" title="线程池"></a>线程池</h2><p>核心大小、最大的大小、空闲时间、队列，拒绝策略</p>
+<p>拒绝策略 丢弃任务并且抛出异常 丢弃任务不抛出异常 丢弃队列最前面的任务 谁调用谁执行</p>
+<h1 id="性能优化"><a href="#性能优化" class="headerlink" title="性能优化"></a>性能优化</h1><h2 id="Mysql"><a href="#Mysql" class="headerlink" title="Mysql"></a>Mysql</h2><p>客户端，系统管理工具、连接池对用户密码校验、sql接口接收sql命令并且返回、解析器解析sql、查询优化器、高速缓冲区、插件式的存储引擎、日志</p>
+<p>索引结构是B+树，B+树只有叶节点存储数据、叶子节点有顺序、查询效率更稳定</p>
+<p>锁类型 共享锁和排他锁 意向共享锁和意向排他锁 临键锁和间隙锁 </p>
+<p>Redo log进行事务持久性和Undo log实现事务原子性</p>
+<p>MVCC  多版本并发控制 </p>
+<p>查询优化器 等价变换原则 优化min max 覆盖索引 limt in</p>
+<p>索引，联合索引，小表驱动大表，尽可能不为空</p>
+<p>优化，业务拆分，针对数量大的表进行历史表分离，主从，执行计划</p>
+<p><strong>为什么MongoDB采用B树索引，而Mysql用B+树做索引</strong></p>
+<p>B+树只有叶子节点存放数据，并且相邻的叶子节点以链表建立连接，B树每个索引节点都有数据存储</p>
+<p>B树虽然提高了磁盘IO性能但是没有解决元素遍历效率低下的问题，为了解决这个问题，mysql采用了B+树作为索引结构，B+树只要遍历叶子节点就可以实现整颗树的遍历；</p>
+<p>MongoDB是nosql，采用B树找到指定索引就可以获取数据，单次查询效率较高；</p>
+<p><strong>主键索引和唯一索引的区别</strong></p>
+<p>主键是一种约束，索引是索引，主键一定包含唯一索引，唯一索引在表中可以有多个</p>
+<p><strong>分析一个慢查询</strong></p>
+<p>判断是否走了索引，LIKE前面不加%，联合索引要在最左边，表设计是否合理，分解查询</p>
+<p><strong>数据库压力很大时，进行拆分</strong></p>
+<p>首选垂直拆分，将数据分类拆分，这样拆分后数据更加清晰，且规则明确 事务处理复杂</p>
+<p>其次水平拆分 分库分表，按照某个规则分库例如hash</p>
+<h2 id="JVM"><a href="#JVM" class="headerlink" title="JVM"></a>JVM</h2><p>执行引擎 类加载器 应用加载器 扩展类加载器 启动类加载器 用户自定义加载器 双亲委派 沙箱安全</p>
+<p>运行时数据区 本地方法栈 程序计数器 栈 方法区 堆 </p>
+<p>栈中每个方法是个栈帧 局部变量表、操作数栈、动态连接、方法出口</p>
+<p>堆 新生代 s1 s0 老年代 元数据</p>
+<p><strong>垃圾回收算法</strong></p>
+<p>复制回收和标记清除、标记整理</p>
+<p><strong>垃圾回收器</strong></p>
+<p>单线程多线程回收，吞吐量回收，cms回收，初始标记、并发标记、重新标记、并发清理；出现内存碎片</p>
+<p>G1 region RSet CSet Card</p>
+<p><strong>类加载</strong></p>
+<p>加载 验证 准备 解析 初始化 使用 卸载</p>
+<p>哪些情况触发加载</p>
+<ul>
+<li>创建类的实例</li>
+<li>访问类的静态变量或调用静态方法</li>
+<li>反射调用 Class.forName</li>
+<li>初始化子类，通过子类调用父类的静态变量，子类不会被加载，能不加载就不加载原则</li>
+</ul>
+<p><strong>常用调优参数</strong></p>
+<p>xms 堆起始大小 xmx堆最大大小 xmn 新生代大小 xss栈内存大小 gc日志</p>
+<h2 id="Tomcat"><a href="#Tomcat" class="headerlink" title="Tomcat"></a>Tomcat</h2><p>Connector 监听端口 不同实现 BIO NIO</p>
+<p>Engine处理请求</p>
+<p>匹配Host和Context</p>
+<h1 id="算法"><a href="#算法" class="headerlink" title="算法"></a>算法</h1><p>冒泡排序 比较两个值，大的放后面</p>
+<p>选择排序 选一个最大的放后面</p>
+<p>插入排序 构建有序数据，未排序的放进去</p>
+<p>补充</p>
+<p>AQS JUC</p>
+<p><strong>项目</strong></p>
+<p>这个项目是通过app操作智能设备，通过不同业务维度划分微服务，每个服务独立部署，api上传仓库，app服务通过motan调用；负责设备中心，户主授权，添加设备、主机基础功能；场景，批量执行操作或者5秒后执行或者今晚8点；设备操作，设备状态kafka</p>
+
+            </div>
+        </article>
+    </div>
+
+      </div>
+      
+        
+
+
+
+
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
+
+    
+    
+    
+    
+    
+    
+
+    <div id="gitalk-container"></div>
+
+    <script>
+        var gitalk = new Gitalk({
+            clientID: '217672eb040280538293',
+            clientSecret: '5a950867142dbcfd9fdc3de4491455bd3651c1a8',
+            repo: 'jinzzzzz.github.io',
+            owner: 'jinzzzzz',
+            admin: 'jinzzzzz',
+            id: location.pathname,      // Ensure uniqueness and length less than 50
+            distractionFreeMode: 'false'  // Facebook-like distraction free mode
+        })
+
+        gitalk.render('gitalk-container')
+    </script>
+
+
+      
+      <footer id="colophon"><span class="copyright-year">
+    
+        &copy;
+    
+        2018 -
+    
+    2019
+    <span class="footer-author">Jin Jin.</span>
+    <span class="power-by">
+        Powered by <a class="hexo-link" href="https://hexo.io/">Hexo</a> and <a class="theme-link" href="https://github.com/frostfan/hexo-theme-polarbear">Polar Bear</a>
+    </span>
+</span>
+
+      </footer>
+
+      <div class="back-to-top" id="back-to-top">
+        <i class="iconfont icon-up"></i>
+      </div>
+    </div>
+    
+
+
+
+
+  
+    <script type="text/javascript" src="/lib/jquery/jquery-3.1.1.min.js"></script>
+  
+
+  
+
+
+
+    <script type="text/javascript" src="/js/src/theme.js?v=1.1"></script>
+<script type="text/javascript" src="/js/src/bootstrap.js?v=1.1"></script>
+
+<!--prettify代码高亮脚本引入-->
+
+
+  </body>
+</html>
