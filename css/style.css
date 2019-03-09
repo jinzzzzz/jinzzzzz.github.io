@@ -184,9 +184,7 @@ pre {
 /**
  * Address odd `em`-unit font size rendering in all browsers.
  */
-code,
 kbd,
-pre,
 samp {
   font-family: monospace, monospace;
   font-size: 1em; }
@@ -607,14 +605,15 @@ h6 {
       max-width: 100%;
       margin: 10px 0;
       border-spacing: 0; }
-      .post .post-content > table th, .post .post-content > table td {
+      .post .post-content > table th,
+      .post .post-content > table td {
         padding: 5px 15px;
         border: 1px double #f0f0f0;
         text-align: left; }
-    .post .post-content code, .post .post-content pre {
+    .post .post-content code,
+    .post .post-content pre {
       padding: 7px;
-      font-size: 13px;
-      font-family: "Open Sans", "PingFang SC", "Hiragino Sans GB", "Microsoft Yahei", "Microsoft Jhenghei", sans-serif;
+      font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
       background: #F8F8F8; }
     .post .post-content code {
       padding: 3px 5px;
@@ -631,7 +630,7 @@ h6 {
           right: 0;
           left: 0;
           padding: 2px 7px;
-          font-size: 13px;
+          font-size: 15px;
           font-weight: bold;
           color: #cacaca;
           background: #f0f0f0;
@@ -639,6 +638,8 @@ h6 {
       .post .post-content .highlight.html > ::after {
         content: "HTML"; }
       .post .post-content .highlight.js > ::after {
+        content: "JavaScript"; }
+      .post .post-content .highlight.javascript > ::after {
         content: "JavaScript"; }
       .post .post-content .highlight.bash > ::after {
         content: "Bash"; }
@@ -672,6 +673,8 @@ h6 {
         content: "YAML"; }
       .post .post-content .highlight.stylus > ::after {
         content: "Stylus"; }
+      .post .post-content .highlight.shell > ::after {
+        content: "Shell"; }
       .post .post-content .highlight .code pre {
         margin: 0;
         padding: 30px 10px 10px; }
@@ -682,8 +685,10 @@ h6 {
           margin: 0;
           padding: 30px 7px 10px; }
       .post .post-content .highlight .line {
-        height: 20px; }
-      .post .post-content .highlight table, .post .post-content .highlight tr, .post .post-content .highlight td {
+        height: 23px; }
+      .post .post-content .highlight table,
+      .post .post-content .highlight tr,
+      .post .post-content .highlight td {
         margin: 0;
         padding: 0;
         width: 100%;
@@ -693,6 +698,7 @@ h6 {
         color: #93a1a1; }
       .post .post-content .highlight .code .keyword,
       .post .post-content .highlight .code .selector-tag,
+      .post .post-content .highlight .code .tag,
       .post .post-content .highlight .code .addition {
         color: #859900; }
       .post .post-content .highlight .code .number,
@@ -840,7 +846,7 @@ h6 {
   padding: 0 10px 7px 0;
   font-size: 14px;
   text-transform: uppercase;
-  border: 1px solid #ff;
+  border: 1px solid #fff;
   display: inline-block;
   background: #fff; }
   .widget_tags .tag-list-item .tag-list-link {
@@ -856,6 +862,7 @@ h6 {
   margin-top: 2em; }
 
 #colophon {
+  text-align: center;
   width: 90%;
   margin: 30px auto 0;
   padding: 20px 0;
@@ -1062,3 +1069,141 @@ h6 {
 @media only screen and (max-width: 750px) {
   .back-to-top {
     display: none !important; } }
+
+#gitment-container {
+  width: 90%;
+  margin: 0 auto;
+  max-width: 1000px; }
+
+#gitment-container a {
+  border-bottom: none; }
+
+body {
+  color: #333; }
+
+#colophon {
+  font-size: 13px;
+  text-align: center;
+  width: 100%; }
+
+.post-content .excerpt {
+  display: none; }
+
+.excerpt img {
+  max-width: 300px; }
+
+code {
+  font-size: .9em;
+  font-family: Menlo, Monaco, Consolas, "Courier New", monospace; }
+
+.excerpt code,
+.post .post-content code:not([class]) {
+  padding: 0px 4px;
+  background: #f8f8f8;
+  color: #4e5980;
+  border-radius: 4px; }
+
+.prettyprint {
+  position: relative;
+  background: #f8f8f8 !important; }
+
+.prettyprint code {
+  font-size: 1em;
+  display: block;
+  overflow-x: auto;
+  padding: 12px 8px 6px;
+  margin-top: 7px; }
+
+@media screen and (max-width: 600px) {
+  .prettyprint code {
+    font-size: .8em; } }
+
+.prettyprint code.html::before {
+  content: "HTML"; }
+
+.prettyprint code.js::before {
+  content: "JavaScript"; }
+
+.prettyprint code.javascript::before {
+  content: "JavaScript"; }
+
+.prettyprint code.bash::before {
+  content: "Bash"; }
+
+.prettyprint code.css::before {
+  content: "CSS"; }
+
+.prettyprint code.scss::before {
+  content: "Scss"; }
+
+.prettyprint code.java::before {
+  content: "Java"; }
+
+.prettyprint code.xml::before {
+  content: "XML"; }
+
+.prettyprint code.python::before {
+  content: "Python"; }
+
+.prettyprint code.json::before {
+  content: "JSON"; }
+
+.prettyprint code.swift::before {
+  content: "Swift"; }
+
+.prettyprint code.ruby::before {
+  content: "Ruby"; }
+
+.prettyprint code.php::before {
+  content: "PHP"; }
+
+.prettyprint code.c::before {
+  content: "C"; }
+
+.prettyprint code.cpp::before {
+  content: "C++"; }
+
+.prettyprint code.scheme::before {
+  content: "Scheme"; }
+
+.prettyprint code.objectivec::before {
+  content: "Objective-C"; }
+
+.prettyprint code.yml::before {
+  content: "YAML"; }
+
+.prettyprint code.stylus::before {
+  content: "Stylus"; }
+
+.prettyprint code.shell::before {
+  content: "Shell"; }
+
+.prettyprint code::before {
+  position: absolute;
+  top: 0px;
+  right: 5px;
+  color: #ccc;
+  font-size: 1em; }
+
+.post-copyright {
+  margin: 2em 0;
+  padding-left: 10px;
+  position: relative;
+  border-left: 2px solid #aaa;
+  list-style: none; }
+
+.post-content p {
+  margin: 22px 0; }
+
+.post-content a {
+  border-bottom: 1px solid #d1e9ff;
+  transition: all 0.1s ease; }
+
+.gitment-comments-init-btn:disabled,
+.gitment-editor-submit:disabled {
+  background: #21a3f5; }
+
+#gitalk-container {
+  width: 85%;
+  max-width: 1000px;
+  margin: 0 auto; }
