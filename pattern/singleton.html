@@ -36,18 +36,18 @@
 <link rel="canonical" href="https://jinzzzzz.github.io/pattern/singleton.html">
 
 
-<meta name="description" content="单例模式，独一无二的对象，确保一个类只能有一个实例，并提供一个全局访问点。 单例模式有什么用处？ 有些情况下，我们只需要一个对象的实例，例如日志、数据库连接池、配置类及工厂类。这些对象如果创建了多个实例，可能会导致资源的浪费以及产生一些问题。 为什么要用单例模式而不是定义一个全局变量去做呢？ 如果定义全局变量，通过程序员间的约定是可以做到，但是如果有更好的做法，那又何乐而不为呢。而且单例模式可以确">
+<meta name="description" content="本篇博客代码地址：https://github.com/jinzzzzz/pattern  单例模式，独一无二的对象，确保一个类只能有一个实例，并提供一个全局访问点。 单例模式有什么用处？ 有些情况下，我们只需要一个对象的实例，例如日志、数据库连接池、配置类及工厂类。这些对象如果创建了多个实例，可能会导致资源的浪费以及产生一些问题。 为什么要用单例模式而不是定义一个全局变量去做呢？ 如果定义全局">
 <meta name="keywords" content="设计模式">
 <meta property="og:type" content="article">
 <meta property="og:title" content="设计模式之单例模式详解">
 <meta property="og:url" content="https://jinzzzzz.github.io/pattern/singleton.html">
 <meta property="og:site_name" content="JinJin&#39;s Blog">
-<meta property="og:description" content="单例模式，独一无二的对象，确保一个类只能有一个实例，并提供一个全局访问点。 单例模式有什么用处？ 有些情况下，我们只需要一个对象的实例，例如日志、数据库连接池、配置类及工厂类。这些对象如果创建了多个实例，可能会导致资源的浪费以及产生一些问题。 为什么要用单例模式而不是定义一个全局变量去做呢？ 如果定义全局变量，通过程序员间的约定是可以做到，但是如果有更好的做法，那又何乐而不为呢。而且单例模式可以确">
+<meta property="og:description" content="本篇博客代码地址：https://github.com/jinzzzzz/pattern  单例模式，独一无二的对象，确保一个类只能有一个实例，并提供一个全局访问点。 单例模式有什么用处？ 有些情况下，我们只需要一个对象的实例，例如日志、数据库连接池、配置类及工厂类。这些对象如果创建了多个实例，可能会导致资源的浪费以及产生一些问题。 为什么要用单例模式而不是定义一个全局变量去做呢？ 如果定义全局">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:updated_time" content="2019-03-13T08:05:37.290Z">
+<meta property="og:updated_time" content="2019-03-13T09:03:24.439Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="设计模式之单例模式详解">
-<meta name="twitter:description" content="单例模式，独一无二的对象，确保一个类只能有一个实例，并提供一个全局访问点。 单例模式有什么用处？ 有些情况下，我们只需要一个对象的实例，例如日志、数据库连接池、配置类及工厂类。这些对象如果创建了多个实例，可能会导致资源的浪费以及产生一些问题。 为什么要用单例模式而不是定义一个全局变量去做呢？ 如果定义全局变量，通过程序员间的约定是可以做到，但是如果有更好的做法，那又何乐而不为呢。而且单例模式可以确">
+<meta name="twitter:description" content="本篇博客代码地址：https://github.com/jinzzzzz/pattern  单例模式，独一无二的对象，确保一个类只能有一个实例，并提供一个全局访问点。 单例模式有什么用处？ 有些情况下，我们只需要一个对象的实例，例如日志、数据库连接池、配置类及工厂类。这些对象如果创建了多个实例，可能会导致资源的浪费以及产生一些问题。 为什么要用单例模式而不是定义一个全局变量去做呢？ 如果定义全局">
 
 
 <link rel="stylesheet" type="text/css" href="/css/style.css?v=1.1">
@@ -144,7 +144,10 @@ var _hmt = _hmt || [];
 
     
             <div class="post-content">
-            <p><strong>单例模式，独一无二的对象，确保一个类只能有一个实例，并提供一个全局访问点。</strong></p>
+            <blockquote>
+<p>本篇博客代码地址：<a href="https://github.com/jinzzzzz/pattern" target="_blank" rel="noopener">https://github.com/jinzzzzz/pattern</a></p>
+</blockquote>
+<p><strong>单例模式，独一无二的对象，确保一个类只能有一个实例，并提供一个全局访问点。</strong></p>
 <p>单例模式有什么用处？</p>
 <p>有些情况下，我们只需要一个对象的实例，例如日志、数据库连接池、配置类及工厂类。这些对象如果创建了多个实例，可能会导致资源的浪费以及产生一些问题。</p>
 <p>为什么要用单例模式而不是定义一个全局变量去做呢？</p>

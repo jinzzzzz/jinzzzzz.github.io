@@ -36,21 +36,21 @@
 <link rel="canonical" href="https://jinzzzzz.github.io/pattern/factory.html">
 
 
-<meta name="description" content="本篇博客例子参照于《Head First设计模式》  当你使用new时，总是要实例化一个具体的实现类。 1Pizza pizza = new ClamPizza(); Pizza是一个披萨接口，使用接口让代码更具有弹性，但是在使用时还是必须确立具体的实现类。 当你的实现类很多时，需要在运行时由一些条件来确立实例化哪个类，那么通常就会写出这样的代码。 12345678910111213141516">
+<meta name="description" content="本篇博客例子参照于《Head First设计模式》 本篇博客代码地址：https://github.com/jinzzzzz/pattern  当你使用new时，总是要实例化一个具体的实现类。 1Pizza pizza = new ClamPizza(); Pizza是一个披萨接口，使用接口让代码更具有弹性，但是在使用时还是必须确立具体的实现类。 当你的实现类很多时，需要在运行时由一些条件来确立">
 <meta name="keywords" content="设计模式">
 <meta property="og:type" content="article">
 <meta property="og:title" content="设计模式之工厂模式详解">
 <meta property="og:url" content="https://jinzzzzz.github.io/pattern/factory.html">
 <meta property="og:site_name" content="JinJin&#39;s Blog">
-<meta property="og:description" content="本篇博客例子参照于《Head First设计模式》  当你使用new时，总是要实例化一个具体的实现类。 1Pizza pizza = new ClamPizza(); Pizza是一个披萨接口，使用接口让代码更具有弹性，但是在使用时还是必须确立具体的实现类。 当你的实现类很多时，需要在运行时由一些条件来确立实例化哪个类，那么通常就会写出这样的代码。 12345678910111213141516">
+<meta property="og:description" content="本篇博客例子参照于《Head First设计模式》 本篇博客代码地址：https://github.com/jinzzzzz/pattern  当你使用new时，总是要实例化一个具体的实现类。 1Pizza pizza = new ClamPizza(); Pizza是一个披萨接口，使用接口让代码更具有弹性，但是在使用时还是必须确立具体的实现类。 当你的实现类很多时，需要在运行时由一些条件来确立">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/pattern/simple-factory.png">
 <meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/pattern/method-create.png">
 <meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/pattern/method-UML.png">
-<meta property="og:updated_time" content="2019-03-13T02:04:34.052Z">
+<meta property="og:updated_time" content="2019-03-13T09:01:39.764Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="设计模式之工厂模式详解">
-<meta name="twitter:description" content="本篇博客例子参照于《Head First设计模式》  当你使用new时，总是要实例化一个具体的实现类。 1Pizza pizza = new ClamPizza(); Pizza是一个披萨接口，使用接口让代码更具有弹性，但是在使用时还是必须确立具体的实现类。 当你的实现类很多时，需要在运行时由一些条件来确立实例化哪个类，那么通常就会写出这样的代码。 12345678910111213141516">
+<meta name="twitter:description" content="本篇博客例子参照于《Head First设计模式》 本篇博客代码地址：https://github.com/jinzzzzz/pattern  当你使用new时，总是要实例化一个具体的实现类。 1Pizza pizza = new ClamPizza(); Pizza是一个披萨接口，使用接口让代码更具有弹性，但是在使用时还是必须确立具体的实现类。 当你的实现类很多时，需要在运行时由一些条件来确立">
 <meta name="twitter:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/pattern/simple-factory.png">
 
 
@@ -150,6 +150,7 @@ var _hmt = _hmt || [];
             <div class="post-content">
             <blockquote>
 <p>本篇博客例子参照于《Head First设计模式》</p>
+<p>本篇博客代码地址：<a href="https://github.com/jinzzzzz/pattern" target="_blank" rel="noopener">https://github.com/jinzzzzz/pattern</a></p>
 </blockquote>
 <p>当你使用<strong>new</strong>时，总是要实例化一个具体的实现类。</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Pizza pizza = <span class="keyword">new</span> ClamPizza();</span><br></pre></td></tr></table></figure>
