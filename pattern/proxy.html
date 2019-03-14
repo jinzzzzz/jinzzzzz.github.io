@@ -36,18 +36,20 @@
 <link rel="canonical" href="https://jinzzzzz.github.io/pattern/proxy.html">
 
 
-<meta name="description" content="占坑">
+<meta name="description" content="代理模式是给某个对象提供代理对象，由代理对象控制原来对象的引用。 代理模式属于结构型设计模式，使用代理模式能增强目标对象的功能，例如Spring AOP就是代理模式。 代理模式结构图：  Subject是接口，RealSubject是被代理的对象，Proxy 是代理对象。代理对象持有被代理对象的引用，客户端调用代理对象的方法时候，同时也调用了被代理对象的方法，但是在代理对象的方法前后可以增加一些处">
 <meta name="keywords" content="设计模式">
 <meta property="og:type" content="article">
 <meta property="og:title" content="设计模式之代理模式详解">
 <meta property="og:url" content="https://jinzzzzz.github.io/pattern/proxy.html">
 <meta property="og:site_name" content="JinJin&#39;s Blog">
-<meta property="og:description" content="占坑">
+<meta property="og:description" content="代理模式是给某个对象提供代理对象，由代理对象控制原来对象的引用。 代理模式属于结构型设计模式，使用代理模式能增强目标对象的功能，例如Spring AOP就是代理模式。 代理模式结构图：  Subject是接口，RealSubject是被代理的对象，Proxy 是代理对象。代理对象持有被代理对象的引用，客户端调用代理对象的方法时候，同时也调用了被代理对象的方法，但是在代理对象的方法前后可以增加一些处">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:updated_time" content="2019-03-12T09:54:16.712Z">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/pattern/proxy.png">
+<meta property="og:updated_time" content="2019-03-14T09:29:17.899Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="设计模式之代理模式详解">
-<meta name="twitter:description" content="占坑">
+<meta name="twitter:description" content="代理模式是给某个对象提供代理对象，由代理对象控制原来对象的引用。 代理模式属于结构型设计模式，使用代理模式能增强目标对象的功能，例如Spring AOP就是代理模式。 代理模式结构图：  Subject是接口，RealSubject是被代理的对象，Proxy 是代理对象。代理对象持有被代理对象的引用，客户端调用代理对象的方法时候，同时也调用了被代理对象的方法，但是在代理对象的方法前后可以增加一些处">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/pattern/proxy.png">
 
 
 <link rel="stylesheet" type="text/css" href="/css/style.css?v=1.1">
@@ -144,7 +146,12 @@ var _hmt = _hmt || [];
 
     
             <div class="post-content">
-            <p>占坑</p>
+            <p><strong>代理模式是给某个对象提供代理对象，由代理对象控制原来对象的引用。</strong></p>
+<p>代理模式属于结构型设计模式，使用代理模式能增强目标对象的功能，例如Spring AOP就是代理模式。</p>
+<p>代理模式结构图：</p>
+<p><img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/pattern/proxy.png" alt></p>
+<p>Subject是接口，RealSubject是被代理的对象，Proxy 是代理对象。代理对象持有被代理对象的引用，客户端调用代理对象的方法时候，同时也调用了被代理对象的方法，但是在代理对象的方法前后可以增加一些处理逻辑。例如Spring的声明式事务，就是通过调用方法前开启事务，方法调用结束后提交或回滚事务实现的。</p>
+<p><strong>静态代理</strong></p>
 
             </div>
           
