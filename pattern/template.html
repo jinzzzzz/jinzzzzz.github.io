@@ -44,7 +44,7 @@
 <meta property="og:site_name" content="JinJin&#39;s Blog">
 <meta property="og:description" content="本篇博客例子参照于《Head First设计模式》 本篇博客代码地https://github.com/jinzzzzz/pattern/tree/master/src/main/java/com/jin/pattern/template  模板模式定义了一个算法的骨架，并允许子类为一个或者多个步骤提供实现。 举个例子，比如我们喝冲泡类的饮料可以分为4个步骤： （1）烧开水  （2）将需要冲泡的">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:updated_time" content="2019-03-18T09:10:26.069Z">
+<meta property="og:updated_time" content="2019-03-19T06:37:01.575Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="设计模式之模板模式详解">
 <meta name="twitter:description" content="本篇博客例子参照于《Head First设计模式》 本篇博客代码地https://github.com/jinzzzzz/pattern/tree/master/src/main/java/com/jin/pattern/template  模板模式定义了一个算法的骨架，并允许子类为一个或者多个步骤提供实现。 举个例子，比如我们喝冲泡类的饮料可以分为4个步骤： （1）烧开水  （2）将需要冲泡的">
@@ -171,7 +171,7 @@ var _hmt = _hmt || [];
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BrewTest</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Tea tea = <span class="keyword">new</span> Tea(<span class="keyword">true</span>);</span><br><span class="line">        tea.prepare();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>将算法中可选的部分定义为钩子方法，子类可以自由选择是否实现钩子方法而去影响算法的流程。</p>
 <p><strong>模板模式在排序中的应用</strong></p>
-<p>模板模式除了继承以外还有其他的实现方式。例如数组的排序方法Arrays.sort(Object[] a)就是一个模板方法。</p>
+<p>模板模式的实现方式不仅仅是继承抽象类。例如数组的排序方法Arrays.sort(Object[] a)就是一个模板方法。</p>
 <p>sort()方法根据元素的自然顺序对指定对象数组按升序进行排序。数组中的所有元素都必须实现 Comparable 接口。且数组中的所有元素都必须是可相互比较的。sort()方法定义为一个静态方法以供其他类调用。</p>
 <p>Arrays.sort方法流程：</p>
 <ol>
@@ -217,6 +217,12 @@ var _hmt = _hmt || [];
         
         
   <nav class="post-nav">
+    
+      <a class="prev" href="/pattern/adapter.html">
+        <i class="iconfont icon-left"></i>
+        <span class="prev-text nav-default">adapter</span>
+        <span class="prev-text nav-mobile">Prev</span>
+      </a>
     
     
       <a class="next" href="/pattern/proxy.html">
