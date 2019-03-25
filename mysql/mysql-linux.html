@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang>
+  <head><meta name="generator" content="Hexo 3.8.0">
+    
+<meta name="google-site-verification" content="DwDg4EuywHWNZUkTC7sG0WGv_UQekM4uRtOoaGuDJHc">
+<meta name="baidu-site-verification" content="hkLiBHH93D">
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,minimum-scale=1,maximum-scale=1">
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="description" content="Linux环境安装MySQL8.0">
+
+
+
+
+  <meta name="keywords" content="MySQL,">
+
+
+
+
+  <link rel="alternate" href="/default" title="JinJin's Blog">
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=1.1">
+
+
+
+<link rel="canonical" href="https://jinzzzzz.github.io/mysql/mysql-linux.html">
+
+
+<meta name="description" content="Linux查看当前操作系统版本信息   指令 cat /proc/version   输出 Linux version 3.10.0-957.el7.x86_64 (mockbuild@kbuilder.bsys.centos.org) (gcc version 4.8.5 20150623 (Red Hat 4.8.5-36) (GCC) ) #1 SMP Thu Nov 8 23:39:32">
+<meta name="keywords" content="MySQL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux环境安装MySQL8.0">
+<meta property="og:url" content="https://jinzzzzz.github.io/mysql/mysql-linux.html">
+<meta property="og:site_name" content="JinJin&#39;s Blog">
+<meta property="og:description" content="Linux查看当前操作系统版本信息   指令 cat /proc/version   输出 Linux version 3.10.0-957.el7.x86_64 (mockbuild@kbuilder.bsys.centos.org) (gcc version 4.8.5 20150623 (Red Hat 4.8.5-36) (GCC) ) #1 SMP Thu Nov 8 23:39:32">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/mysql8-gz.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/mysql8-login.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/41bf8d44cb8d32fa5589802e1c50a8d0b920568a/blog/mysql/mysql-checklist.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/f9b7489c0dd7971181a979a95a88c1d49b74d926/blog/mysql/navicat.png">
+<meta property="og:updated_time" content="2019-03-25T06:45:03.619Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Linux环境安装MySQL8.0">
+<meta name="twitter:description" content="Linux查看当前操作系统版本信息   指令 cat /proc/version   输出 Linux version 3.10.0-957.el7.x86_64 (mockbuild@kbuilder.bsys.centos.org) (gcc version 4.8.5 20150623 (Red Hat 4.8.5-36) (GCC) ) #1 SMP Thu Nov 8 23:39:32">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/mysql8-gz.png">
+
+
+<link rel="stylesheet" type="text/css" href="/css/style.css?v=1.1">
+<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+
+
+
+
+
+
+<script type="text/javascript">
+  var themeConfig = {
+    fancybox: {
+      enable: false
+    },
+  };
+</script>
+
+
+
+
+  
+
+
+
+
+
+<!--百度统计-->
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?b733e1eaeacbf8f87d3be047f28c3973";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+    <title> Linux环境安装MySQL8.0 - JinJin's Blog </title>
+  </head>
+
+  <body>
+    <div id="page">
+      <header id="masthead"><div class="site-header-inner">
+    <h1 class="site-title">
+        <a href="/." class="logo">JinJin's Blog</a>
+    </h1>
+
+    <nav id="nav-top">
+        
+            <ul id="menu-top" class="nav-top-items">
+                
+                    <li class="menu-item">
+                        <a href="/archives">
+                            
+                            
+                                Archives
+                            
+                        </a>
+                    </li>
+                
+                    <li class="menu-item">
+                        <a href="/about">
+                            
+                            
+                                About
+                            
+                        </a>
+                    </li>
+                
+            </ul>
+        
+  </nav>
+</div>
+
+      </header>
+      <div id="content">
+        
+    <div id="primary">
+        
+  <article class="post">
+    <header class="post-header">
+      <h1 class="post-title">
+        
+          Linux环境安装MySQL8.0
+        
+      </h1>
+
+      <time class="post-time">
+          2019-03-25
+      </time>
+    </header>
+
+
+
+    
+            <div class="post-content">
+            <p><strong>Linux查看当前操作系统版本信息</strong> </p>
+<ul>
+<li>指令<ul>
+<li>cat /proc/version</li>
+</ul>
+</li>
+<li>输出<ul>
+<li>Linux version 3.10.0-957.el7.x86_64 (<a href="mailto:mockbuild@kbuilder.bsys.centos.org" target="_blank" rel="noopener">mockbuild@kbuilder.bsys.centos.org</a>) (gcc version 4.8.5 20150623 (Red Hat 4.8.5-36) (GCC) ) #1 SMP Thu Nov 8 23:39:32 UTC 2018</li>
+</ul>
+</li>
+</ul>
+<p><strong>MySQL下载</strong></p>
+<ul>
+<li><p>官网下载地址 <a href="https://dev.mysql.com/downloads/mysql/" target="_blank" rel="noopener">https://dev.mysql.com/downloads/mysql/</a></p>
+</li>
+<li><p>选择合适的版本进行下载,64位系统则下载mysql-8.0.15-linux-glibc2.12-x86_64.tar.xz</p>
+<p><img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/mysql8-gz.png" alt></p>
+</li>
+<li><p>选择只下载，不进行登录或注册</p>
+<p><img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/mysql8-login.png" alt></p>
+</li>
+</ul>
+<p><strong>MySQL安装</strong></p>
+<p>解压mysql-8.0.15-linux-glibc2.12-x86_64.tar.xz文件，因为是xz的压缩格式，所以需要先进行xz -d解压，然后才进行 tar -xvf 操作</p>
+<ul>
+<li><p>解压xz文件</p>
+<ul>
+<li>xz -d mysql-8.0.15-linux-glibc2.12-x86_64.tar.xz   </li>
+</ul>
+</li>
+<li><p>解压tar文件</p>
+<ul>
+<li>tar -xvf mysql-8.0.15-linux-glibc2.12-x86_64.tar   </li>
+</ul>
+</li>
+<li><p>将解压出的文件夹改名为mysql</p>
+<ul>
+<li>mv mysql-8.0.15-linux-glibc2.12-x86_64 mysql</li>
+</ul>
+</li>
+<li><p>添加系统mysql组和mysql用户</p>
+<ul>
+<li>groupadd mysql</li>
+<li>useradd -r -g mysql mysql</li>
+</ul>
+<p>useradd 指令解释</p>
+<p>－g：指定用户所属的起始群组。<br>－r ：建立系统账号。 </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">useradd -r -g mysql[用户组] mysql[用户名]</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>改变 mysql 目录权限</p>
+<ul>
+<li>chown -R mysql:mysql  ./</li>
+</ul>
+<p>chown 指令解释</p>
+<p>chown [选项]… [用户名] ：[用户组]] 文件…</p>
+</li>
+<li><p>初始化数据库</p>
+<ul>
+<li>mysql/bin/mysqld –initialize –user=mysql –basedir=/home/mysql/mysql –datadir=/home/mysql/mysql/data</li>
+</ul>
+<p>执行mysqld –initialize命令进行安装，值得注意的一点是这里和低版本mysql安装命令不同；basedir和datadir选择自己文件夹的结构。</p>
+<p>另外这里会生成随机密码，一定要记录下来。</p>
+<p>2019-03-20T16:08:30.923330Z 5 [Note] [MY-010454] [Server] A temporary password is generated for root@localhost: HJHr&gt;lkQS2fg</p>
+<p>最后的随机字符串就是随机密码。</p>
+</li>
+<li><p>修改my.cnf</p>
+<ul>
+<li><p>vi /etc/my.cnf</p>
+</li>
+<li><p>basedir = /home/mysql/mysql</p>
+<p>datadir = /home/mysql/mysql/data</p>
+<p>port = 3306</p>
+<p>socket = /tmp/mysql.sock</p>
+<p>character_set_server = utf8mb4</p>
+</li>
+</ul>
+</li>
+<li><p>建立MySQL服务</p>
+<ul>
+<li>cp -a ./mysql/support-files/mysql.server /etc/init.d/mysqld</li>
+<li>chmod +x /etc/rc.d/init.d/mysqld    </li>
+<li>chkconfig –add mysqld</li>
+</ul>
+<p>可以使用chkconfig  –list 检查服务是否生效</p>
+<p><img src="https://raw.githubusercontent.com/jinzzzzz/image/41bf8d44cb8d32fa5589802e1c50a8d0b920568a/blog/mysql/mysql-checklist.png" alt></p>
+</li>
+<li><p>配置环境变量</p>
+<ul>
+<li><p>vi /etc/profile</p>
+<p>在 profile 文件底部添加如下两行配置</p>
+</li>
+<li><p>PATH=/home/mysql/mysql/bin:/home/mysql/mysql/lib:$PATH</p>
+</li>
+<li><p>export PATH</p>
+</li>
+</ul>
+<p>设置环境变量立即生效</p>
+<ul>
+<li>source /etc/profile</li>
+</ul>
+</li>
+<li><p>启动MySQL服务</p>
+<ul>
+<li>service mysqld start</li>
+</ul>
+</li>
+<li><p>登录并修改密码 (MySQL8的密码认证插件默认是caching_sha2_password,所以需要特别指定mysql_native_password插件，见下条)</p>
+<ul>
+<li>mysql -uroot -p</li>
+<li>输入初始化数据库时随机生成的密码，如果没记住也没关系，删除data目录下的文件然后重新初始化一次</li>
+<li>alter user ‘root‘@’localhost’ identified by ‘jin’; </li>
+</ul>
+</li>
+<li><p>开启mysql远程访问权限</p>
+<ul>
+<li>use mysql;</li>
+<li>select host, user from user; 查看信息</li>
+<li>update user set host = ‘%’ where user = ‘root’;</li>
+<li>ALTER USER ‘root‘@’%’ IDENTIFIED WITH mysql_native_password BY ‘jin’;</li>
+<li>FLUSH PRIVILEGES;</li>
+</ul>
+</li>
+<li><p><img src="https://raw.githubusercontent.com/jinzzzzz/image/f9b7489c0dd7971181a979a95a88c1d49b74d926/blog/mysql/navicat.png" alt></p>
+<p>完成安装</p>
+</li>
+</ul>
+
+            </div>
+          
+
+    
+      <footer class="post-footer">
+      <ul class="post-copyright">
+        <li class="post-copyright-author">
+            <span>本文作者：</span>Jin Jin
+        </li>
+        <li class="post-copyright-link">
+          <span>本文链接：</span>
+          <a href="https://jinzzzzz.github.io//mysql/mysql-linux.html" title="Linux环境安装MySQL8.0">https://jinzzzzz.github.io/mysql/mysql-linux.html</a>
+        </li>
+        <li class="post-copyright-license">
+          <span>版权： </span>
+          本站文章均采用 <a href="http://creativecommons.org/licenses/by-nc-sa/3.0/cn/" rel="external nofollow" target="_blank">CC BY-NC-SA 3.0 CN</a> 许可协议，请勿用于商业，转载注明出处！
+        </li>
+      </ul>
+		
+		<div class="post-tags">
+		  
+			<a href="/tags/MySQL/">MySQL</a>
+		  
+		</div>
+		
+
+        
+        
+  <nav class="post-nav">
+    
+    
+      <a class="next" href="/pattern/decorator.html">
+        <span class="next-text nav-default">设计模式之装饰模式详解</span>
+        <span class="prev-text nav-mobile">Next</span>
+        <i class="iconfont icon-right"></i>
+      </a>
+    
+  </nav>
+
+        
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+      </footer>
+    
+  </article>
+
+    </div>
+
+      </div>
+      
+        
+
+
+
+
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
+
+    
+    
+    
+    
+    
+    
+
+    <div id="gitalk-container"></div>
+
+    <script>
+        var gitalk = new Gitalk({
+            clientID: '217672eb040280538293',
+            clientSecret: '5a950867142dbcfd9fdc3de4491455bd3651c1a8',
+            repo: 'jinzzzzz.github.io',
+            owner: 'jinzzzzz',
+            admin: 'jinzzzzz',
+            id: location.pathname,      // Ensure uniqueness and length less than 50
+            distractionFreeMode: 'false'  // Facebook-like distraction free mode
+        })
+
+        gitalk.render('gitalk-container')
+    </script>
+
+
+      
+      <footer id="colophon"><span class="copyright-year">
+    
+        &copy;
+    
+        2018 -
+    
+    2019
+    <span class="footer-author">Jin Jin.</span>
+    <span class="power-by">
+        Powered by <a class="hexo-link" href="https://hexo.io/">Hexo</a> and <a class="theme-link" href="https://github.com/frostfan/hexo-theme-polarbear">Polar Bear</a>
+    </span>
+</span>
+
+      </footer>
+
+      <div class="back-to-top" id="back-to-top">
+        <i class="iconfont icon-up"></i>
+      </div>
+    </div>
+    
+
+
+
+
+  
+    <script type="text/javascript" src="/lib/jquery/jquery-3.1.1.min.js"></script>
+  
+
+  
+
+
+
+    <script type="text/javascript" src="/js/src/theme.js?v=1.1"></script>
+<script type="text/javascript" src="/js/src/bootstrap.js?v=1.1"></script>
+
+<!--prettify代码高亮脚本引入-->
+
+
+  </body>
+</html>
