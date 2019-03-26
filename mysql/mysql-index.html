@@ -51,7 +51,7 @@
 <meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/myisam-b-tree.png">
 <meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/myisam-name-b-tree.png">
 <meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/innodb-b-tree.png">
-<meta property="og:updated_time" content="2019-03-26T09:15:35.009Z">
+<meta property="og:updated_time" content="2019-03-26T09:18:15.552Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="MySQL理解索引B+树">
 <meta name="twitter:description" content="目录：   为什么MySQL使用B+树作为索引结构 二叉查找树 平衡二叉查找树 B树 B+树 结论   Mysql B+树索引体现形式 Myisam引擎 Innodb 引擎     什么是索引？ 索引是可以高效获取数据的数据结构。数据库维护特定查找算法的数据结构，这些数据结构指向数据。这样的话就可以在这些数据结构上实现查找算法，然后加速对表中数据行的检索。 为什么MySQL使用B+树作为索引结构二">
@@ -158,7 +158,7 @@ var _hmt = _hmt || [];
 <li><a href="#为什么mysql使用b树作为索引结构">为什么MySQL使用B+树作为索引结构</a><ul>
 <li><a href="#二叉查找树">二叉查找树</a></li>
 <li><a href="#平衡二叉查找树">平衡二叉查找树</a></li>
-<li><a href="#b树"><strong>B树</strong></a></li>
+<li><a href="#b树">B树</a></li>
 <li><a href="#b树">B+树</a></li>
 <li><a href="#结论">结论</a></li>
 </ul>
@@ -191,7 +191,7 @@ var _hmt = _hmt || [];
 <p>没有很好的利用操作磁盘IO的数据交换特性，一次IO操作以页为单位是4KB；一个节点的数据显然不够一页，如果一次IO拿到的数据量多一些，效率肯定会提高。从而减少频繁的IO操作。</p>
 </li>
 </ol>
-<h3><span id="b树"><strong>B树</strong></span></h3><p><img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/B-Tree.png" alt></p>
+<h3><span id="b树">B树</span></h3><p><img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/B-Tree.png" alt></p>
 <p>B树和平衡二叉查找树的不同点是B树属于多叉查找树又名平衡多路查找树，也就是他的查找路径不只两个。</p>
 <p>每个磁盘块一个节点，每个节点包含了很关键字。把树的节点关键字增多后树的层级比原来的二叉树少了。</p>
 <p>B树利用了磁盘预读原理，将一个节点的大小设为等于一个页，这样每个节点只需要一次IO就可以完全载入。</p>
