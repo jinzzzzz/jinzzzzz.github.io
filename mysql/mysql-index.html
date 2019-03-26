@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang>
+  <head><meta name="generator" content="Hexo 3.8.0">
+    
+<meta name="google-site-verification" content="DwDg4EuywHWNZUkTC7sG0WGv_UQekM4uRtOoaGuDJHc">
+<meta name="baidu-site-verification" content="hkLiBHH93D">
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,minimum-scale=1,maximum-scale=1">
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="description" content="MySQL索引B+树">
+
+
+
+
+  <meta name="keywords" content="MySQL,">
+
+
+
+
+  <link rel="alternate" href="/default" title="JinJin's Blog">
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=1.1">
+
+
+
+<link rel="canonical" href="https://jinzzzzz.github.io/mysql/mysql-">
+
+
+<meta name="description" content="什么是索引？ 索引是可以高效获取数据的数据结构。数据库维护特定查找算法的数据结构，这些数据结构指向数据。这样的话就可以在这些数据结构上实现查找算法，然后加速对表中数据行的检索。 为什么MySQL使用B+树作为索引结构二叉查找树 特性  左子树上所有结点的值均小于它的根结点的值。 右子树上所有结点的值均大于它的根结点的值。 左、右子树也分别为二叉查找树  上图即为一个二叉查找树；如果想找的数据为7，">
+<meta name="keywords" content="MySQL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL索引B+树">
+<meta property="og:url" content="https://jinzzzzz.github.io/mysql/mysql-index.html">
+<meta property="og:site_name" content="JinJin&#39;s Blog">
+<meta property="og:description" content="什么是索引？ 索引是可以高效获取数据的数据结构。数据库维护特定查找算法的数据结构，这些数据结构指向数据。这样的话就可以在这些数据结构上实现查找算法，然后加速对表中数据行的检索。 为什么MySQL使用B+树作为索引结构二叉查找树 特性  左子树上所有结点的值均小于它的根结点的值。 右子树上所有结点的值均大于它的根结点的值。 左、右子树也分别为二叉查找树  上图即为一个二叉查找树；如果想找的数据为7，">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/binary-search-tree.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/b-binary-search-tree.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/B-Tree.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/B%2B-Tree.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/myisam-b-tree.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/myisam-name-b-tree.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/innodb-b-tree.png">
+<meta property="og:updated_time" content="2019-03-26T08:49:50.886Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MySQL索引B+树">
+<meta name="twitter:description" content="什么是索引？ 索引是可以高效获取数据的数据结构。数据库维护特定查找算法的数据结构，这些数据结构指向数据。这样的话就可以在这些数据结构上实现查找算法，然后加速对表中数据行的检索。 为什么MySQL使用B+树作为索引结构二叉查找树 特性  左子树上所有结点的值均小于它的根结点的值。 右子树上所有结点的值均大于它的根结点的值。 左、右子树也分别为二叉查找树  上图即为一个二叉查找树；如果想找的数据为7，">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/binary-search-tree.png">
+
+
+<link rel="stylesheet" type="text/css" href="/css/style.css?v=1.1">
+<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+
+
+
+
+
+
+<script type="text/javascript">
+  var themeConfig = {
+    fancybox: {
+      enable: false
+    },
+  };
+</script>
+
+
+
+
+  
+
+
+
+
+
+<!--百度统计-->
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?b733e1eaeacbf8f87d3be047f28c3973";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+    <title> MySQL索引B+树 - JinJin's Blog </title>
+  </head>
+
+  <body>
+    <div id="page">
+      <header id="masthead"><div class="site-header-inner">
+    <h1 class="site-title">
+        <a href="/." class="logo">JinJin's Blog</a>
+    </h1>
+
+    <nav id="nav-top">
+        
+            <ul id="menu-top" class="nav-top-items">
+                
+                    <li class="menu-item">
+                        <a href="/archives">
+                            
+                            
+                                Archives
+                            
+                        </a>
+                    </li>
+                
+                    <li class="menu-item">
+                        <a href="/about">
+                            
+                            
+                                About
+                            
+                        </a>
+                    </li>
+                
+            </ul>
+        
+  </nav>
+</div>
+
+      </header>
+      <div id="content">
+        
+    <div id="primary">
+        
+  <article class="post">
+    <header class="post-header">
+      <h1 class="post-title">
+        
+          MySQL索引B+树
+        
+      </h1>
+
+      <time class="post-time">
+          2019-03-26
+      </time>
+    </header>
+
+
+
+    
+            <div class="post-content">
+            <p><strong>什么是索引？</strong></p>
+<p>索引是可以高效获取数据的<strong>数据结构</strong>。数据库维护特定查找算法的数据结构，这些数据结构指向数据。这样的话就可以在这些数据结构上实现查找算法，然后加速对表中数据行的检索。</p>
+<h2 id="为什么MySQL使用B-树作为索引结构"><a href="#为什么MySQL使用B-树作为索引结构" class="headerlink" title="为什么MySQL使用B+树作为索引结构"></a>为什么MySQL使用B+树作为索引结构</h2><h3 id="二叉查找树"><a href="#二叉查找树" class="headerlink" title="二叉查找树"></a>二叉查找树</h3><p><img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/binary-search-tree.png" alt></p>
+<p>特性</p>
+<ul>
+<li>左子树上所有结点的值均<strong>小于</strong>它的根结点的值。</li>
+<li>右子树上所有结点的值均<strong>大于</strong>它的根结点的值。</li>
+<li>左、右子树也分别为二叉查找树</li>
+</ul>
+<p>上图即为一个二叉查找树；如果想找的数据为7，则只需要遍历三次即可找到，但如果需要查找的数据是22，则需要遍历五次才能找到，如果后续插入的数据都比22大且越来越大的话，则二叉查找树的效率大打折扣，几乎是退化成了线性结构。所以，如果想要高性能的二叉查找树，则需要这个二叉查找树是平衡的。</p>
+<h3 id="平衡二叉查找树"><a href="#平衡二叉查找树" class="headerlink" title="平衡二叉查找树"></a>平衡二叉查找树</h3><p><img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/b-binary-search-tree.png" alt></p>
+<p>平衡二叉树保证了树的结构左右两端数据大致平衡，树的左右两边的层级数相差不会大于1。</p>
+<p>但是平衡二叉查找树依然存在问题</p>
+<ol>
+<li><p>高度太高，树的高度决定了需要进行数据IO的次数</p>
+<p>例如上图要检索出 8 要做 3次IO操作，如果到达了百万级的数据，IO操作的耗时会比较大。</p>
+</li>
+<li><p>每一个磁盘块保存的数据量太小</p>
+<p>没有很好的利用操作磁盘IO的数据交换特性，一次IO操作以页为单位是4KB；一个节点的数据显然不够一页，如果一次IO拿到的数据量多一些，效率肯定会提高。从而减少频繁的IO操作。</p>
+</li>
+</ol>
+<h3 id="B树"><a href="#B树" class="headerlink" title="B树"></a><strong>B树</strong></h3><p><img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/B-Tree.png" alt></p>
+<p>B树和平衡二叉查找树的不同点是B树属于多叉查找树又名平衡多路查找树，也就是他的查找路径不只两个。</p>
+<p>每个磁盘块一个节点，每个节点包含了很关键字。把树的节点关键字增多后树的层级比原来的二叉树少了。</p>
+<p>B树利用了磁盘预读原理，将一个节点的大小设为等于一个页，这样每个节点只需要一次IO就可以完全载入。</p>
+<h3 id="B-树"><a href="#B-树" class="headerlink" title="B+树"></a>B+树</h3><p><img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/B%2B-Tree.png" alt></p>
+<p>B+树和B树不同，数据只能存储在叶子节点。这样在B树的基础上每个节点存储的关键字数变得更多，树的层级更少，所以查询数据更快。所有数据存储在叶子节点上，所以每次查找的次数都相同，查询速度更加稳定;并且所有的叶子节点用指针串起来，这样遍历叶子节点就能获得全部数据。</p>
+<h3 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h3><p>一般来说，索引本身也很大，不可能全部存储在内存中，因此索引往往以索引文件的形式存储的磁盘上，也就是说，索引要尽量减少查找过程中磁盘I/O的存取次数。</p>
+<p>当查询数据的时候，尽快找到目标索引，然后读取数据，使用B+树就能很好的完成这个目的。但是B树的每个节点都有数据域，这增加了IO次数。而B+树除了叶子节点其它节点并不存储数据，节点小，磁盘IO次数就少。</p>
+<p>并且B+树解决了B树遍历元素低下的问题，B+树的数据都在叶子节点，只要遍历叶子节点就实现了整颗树的遍历。并且在数据库中基于范围的查询是比较频繁的，而B树不支持这样的操作。</p>
+<p>而MongoDB因为对这些优点的需求并没有那么强烈，它并不是传统的关系性数据库，而是以Json格式作为存储的nosql，目的就是高性能，高可用，易扩展。Mysql由于使用B+树，数据都在叶节点上，每次查询都需要访问到叶节点，而MongoDB使用B树，所有节点都有数据域，只要找到指定索引就可以进行访问，单次查询平均快于Mysql，而Mysql平均查询耗时都是差不多的。</p>
+<h2 id="Mysql-B-树索引体现形式"><a href="#Mysql-B-树索引体现形式" class="headerlink" title="Mysql B+树索引体现形式"></a>Mysql B+树索引体现形式</h2><h3 id="Myisam引擎"><a href="#Myisam引擎" class="headerlink" title="Myisam引擎"></a>Myisam引擎</h3><p>除了frm 表定义文件外，myisam引擎还有数据文件和索引文件</p>
+<p><img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/myisam-b-tree.png" alt></p>
+<p>两个索引的情况下，都保存在索引文件中并且每个索引的叶子节点中保存了数据的引用</p>
+<p><img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/myisam-name-b-tree.png" alt></p>
+<h3 id="Innodb-引擎"><a href="#Innodb-引擎" class="headerlink" title="Innodb 引擎"></a>Innodb 引擎</h3><p>该引擎创建的表包含 两个文件<br><em>.frm 表定义文件
+</em>.ibd 表数据文件<br>索引信息也保存在数据文件中。这种索引的形式为聚集索引，也就是数据的物理顺序与键值的逻辑顺序相同。</p>
+<p><img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/innodb-b-tree.png" alt></p>
+<p>innodb 是使用主键作为索引的，其他列的索引都是辅助索引，叶子节点存放的是指向主键的值，然后再从主键的索引中查到数据。而myisam的所有索引都是直接指向数据的。</p>
+
+            </div>
+          
+
+    
+      <footer class="post-footer">
+      <ul class="post-copyright">
+        <li class="post-copyright-author">
+            <span>本文作者：</span>Jin Jin
+        </li>
+        <li class="post-copyright-link">
+          <span>本文链接：</span>
+          <a href="https://jinzzzzz.github.io//mysql/mysql-index.html" title="MySQL索引B+树">https://jinzzzzz.github.io/mysql/mysql-index.html</a>
+        </li>
+        <li class="post-copyright-license">
+          <span>版权： </span>
+          本站文章均采用 <a href="http://creativecommons.org/licenses/by-nc-sa/3.0/cn/" rel="external nofollow" target="_blank">CC BY-NC-SA 3.0 CN</a> 许可协议，请勿用于商业，转载注明出处！
+        </li>
+      </ul>
+		
+		<div class="post-tags">
+		  
+			<a href="/tags/MySQL/">MySQL</a>
+		  
+		</div>
+		
+
+        
+        
+  <nav class="post-nav">
+    
+    
+      <a class="next" href="/spring/spring-mvc-demo.html">
+        <span class="next-text nav-default">手写Spring(一) 实现简易版Spring MVC</span>
+        <span class="prev-text nav-mobile">Next</span>
+        <i class="iconfont icon-right"></i>
+      </a>
+    
+  </nav>
+
+        
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+      </footer>
+    
+  </article>
+
+    </div>
+
+      </div>
+      
+        
+
+
+
+
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
+
+    
+    
+    
+    
+    
+    
+
+    <div id="gitalk-container"></div>
+
+    <script>
+        var gitalk = new Gitalk({
+            clientID: '217672eb040280538293',
+            clientSecret: '5a950867142dbcfd9fdc3de4491455bd3651c1a8',
+            repo: 'jinzzzzz.github.io',
+            owner: 'jinzzzzz',
+            admin: 'jinzzzzz',
+            id: location.pathname,      // Ensure uniqueness and length less than 50
+            distractionFreeMode: 'false'  // Facebook-like distraction free mode
+        })
+
+        gitalk.render('gitalk-container')
+    </script>
+
+
+      
+      <footer id="colophon"><span class="copyright-year">
+    
+        &copy;
+    
+        2018 -
+    
+    2019
+    <span class="footer-author">Jin Jin.</span>
+    <span class="power-by">
+        Powered by <a class="hexo-link" href="https://hexo.io/">Hexo</a> and <a class="theme-link" href="https://github.com/frostfan/hexo-theme-polarbear">Polar Bear</a>
+    </span>
+</span>
+
+      </footer>
+
+      <div class="back-to-top" id="back-to-top">
+        <i class="iconfont icon-up"></i>
+      </div>
+    </div>
+    
+
+
+
+
+  
+    <script type="text/javascript" src="/lib/jquery/jquery-3.1.1.min.js"></script>
+  
+
+  
+
+
+
+    <script type="text/javascript" src="/js/src/theme.js?v=1.1"></script>
+<script type="text/javascript" src="/js/src/bootstrap.js?v=1.1"></script>
+
+<!--prettify代码高亮脚本引入-->
+
+
+  </body>
+</html>
