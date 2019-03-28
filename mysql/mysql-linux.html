@@ -48,7 +48,7 @@
 <meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/mysql8-login.png">
 <meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/41bf8d44cb8d32fa5589802e1c50a8d0b920568a/blog/mysql/mysql-checklist.png">
 <meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/f9b7489c0dd7971181a979a95a88c1d49b74d926/blog/mysql/navicat.png">
-<meta property="og:updated_time" content="2019-03-25T06:45:03.619Z">
+<meta property="og:updated_time" content="2019-03-28T09:27:42.866Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Linux环境安装MySQL8.0">
 <meta name="twitter:description" content="Linux查看当前操作系统版本信息   指令 cat /proc/version   输出 Linux version 3.10.0-957.el7.x86_64 (mockbuild@kbuilder.bsys.centos.org) (gcc version 4.8.5 20150623 (Red Hat 4.8.5-36) (GCC) ) #1 SMP Thu Nov 8 23:39:32">
@@ -141,7 +141,7 @@ var _hmt = _hmt || [];
       </h1>
 
       <time class="post-time">
-          2019-03-25
+          2019-03-24
       </time>
     </header>
 
@@ -255,7 +255,7 @@ var _hmt = _hmt || [];
 <li>service mysqld start</li>
 </ul>
 </li>
-<li><p>登录并修改密码 (MySQL8的密码认证插件默认是caching_sha2_password,所以需要特别指定mysql_native_password插件，见下条)</p>
+<li><p>登录并修改密码</p>
 <ul>
 <li>mysql -uroot -p</li>
 <li>输入初始化数据库时随机生成的密码，如果没记住也没关系，删除data目录下的文件然后重新初始化一次</li>
@@ -263,6 +263,7 @@ var _hmt = _hmt || [];
 </ul>
 </li>
 <li><p>开启mysql远程访问权限</p>
+<p>MySQL8的密码认证插件默认是caching_sha2_password,所以需要特别指定mysql_native_password插件，</p>
 <ul>
 <li>use mysql;</li>
 <li>select host, user from user; 查看信息</li>

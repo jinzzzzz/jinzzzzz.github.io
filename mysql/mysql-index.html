@@ -51,7 +51,7 @@
 <meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/myisam-b-tree.png">
 <meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/myisam-name-b-tree.png">
 <meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/innodb-b-tree.png">
-<meta property="og:updated_time" content="2019-03-26T09:18:15.552Z">
+<meta property="og:updated_time" content="2019-03-28T06:49:40.626Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="MySQL理解索引B+树">
 <meta name="twitter:description" content="目录：   为什么MySQL使用B+树作为索引结构 二叉查找树 平衡二叉查找树 B树 B+树 结论   Mysql B+树索引体现形式 Myisam引擎 Innodb 引擎     什么是索引？ 索引是可以高效获取数据的数据结构。数据库维护特定查找算法的数据结构，这些数据结构指向数据。这样的话就可以在这些数据结构上实现查找算法，然后加速对表中数据行的检索。 为什么MySQL使用B+树作为索引结构二">
@@ -205,8 +205,7 @@ var _hmt = _hmt || [];
 <p><img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/myisam-b-tree.png" alt></p>
 <p>两个索引的情况下，都保存在索引文件中并且每个索引的叶子节点中保存了数据的引用</p>
 <p><img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/myisam-name-b-tree.png" alt></p>
-<h3><span id="innodb-引擎">Innodb 引擎</span></h3><p>该引擎创建的表包含 两个文件<br><em>.frm 表定义文件
-</em>.ibd 表数据文件<br>索引信息也保存在数据文件中。这种索引的形式为聚集索引，也就是数据的物理顺序与键值的逻辑顺序相同。</p>
+<h3><span id="innodb-引擎">Innodb 引擎</span></h3><p>innodb引擎创建的表为 frm 表定义文件和 ibd 表数据文件<br>索引信息也保存在数据文件中。这种索引的形式为聚集索引，也就是数据的物理顺序与键值的逻辑顺序相同。</p>
 <p><img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/innodb-b-tree.png" alt></p>
 <p>innodb 是使用主键作为索引的，其他列的索引都是辅助索引，叶子节点存放的是指向主键的值，然后再从主键的索引中查到数据。而myisam的所有索引都是直接指向数据的。</p>
 
