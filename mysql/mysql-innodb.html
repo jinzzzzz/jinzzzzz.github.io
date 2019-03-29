@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang>
+  <head><meta name="generator" content="Hexo 3.8.0">
+    
+<meta name="google-site-verification" content="DwDg4EuywHWNZUkTC7sG0WGv_UQekM4uRtOoaGuDJHc">
+<meta name="baidu-site-verification" content="hkLiBHH93D">
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,minimum-scale=1,maximum-scale=1">
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="description" content="Innodb锁和MVCC详解">
+
+
+
+
+  <meta name="keywords" content="MySQL,">
+
+
+
+
+  <link rel="alternate" href="/default" title="JinJin's Blog">
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=1.1">
+
+
+
+<link rel="canonical" href="https://jinzzzzz.github.io/mysql/mysql-innodb.html">
+
+
+<meta name="description" content="了解Innodb的锁和MVCC前，我们应该先了解MySQL支持的存储引擎及事务，以及各个事务隔离级别的区别 Innodb引擎介绍官方文档地址：https://dev.mysql.com/doc/refman/8.0/en/innodb-storage-engine.html  目录：   存储引擎 MEMORY引擎 ARCHIVE引擎 MyISAM引擎 InnoDB引擎   事务 事务日志Red">
+<meta name="keywords" content="MySQL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Innodb锁和MVCC详解">
+<meta property="og:url" content="https://jinzzzzz.github.io/mysql/mysql-innodb.html">
+<meta property="og:site_name" content="JinJin&#39;s Blog">
+<meta property="og:description" content="了解Innodb的锁和MVCC前，我们应该先了解MySQL支持的存储引擎及事务，以及各个事务隔离级别的区别 Innodb引擎介绍官方文档地址：https://dev.mysql.com/doc/refman/8.0/en/innodb-storage-engine.html  目录：   存储引擎 MEMORY引擎 ARCHIVE引擎 MyISAM引擎 InnoDB引擎   事务 事务日志Red">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/engines.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/redo-fsync.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/redo-commit-log.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/Next-Key-Locks.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/gap.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/mvcc-insert.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/mvcc-update.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/read-view-revise.png">
+<meta property="og:updated_time" content="2019-03-29T09:33:15.341Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Innodb锁和MVCC详解">
+<meta name="twitter:description" content="了解Innodb的锁和MVCC前，我们应该先了解MySQL支持的存储引擎及事务，以及各个事务隔离级别的区别 Innodb引擎介绍官方文档地址：https://dev.mysql.com/doc/refman/8.0/en/innodb-storage-engine.html  目录：   存储引擎 MEMORY引擎 ARCHIVE引擎 MyISAM引擎 InnoDB引擎   事务 事务日志Red">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/engines.png">
+
+
+<link rel="stylesheet" type="text/css" href="/css/style.css?v=1.1">
+<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+
+
+
+
+
+
+<script type="text/javascript">
+  var themeConfig = {
+    fancybox: {
+      enable: false
+    },
+  };
+</script>
+
+
+
+
+  
+
+
+
+
+
+<!--百度统计-->
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?b733e1eaeacbf8f87d3be047f28c3973";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+    <title> Innodb锁和MVCC详解 - JinJin's Blog </title>
+  </head>
+
+  <body>
+    <div id="page">
+      <header id="masthead"><div class="site-header-inner">
+    <h1 class="site-title">
+        <a href="/." class="logo">JinJin's Blog</a>
+    </h1>
+
+    <nav id="nav-top">
+        
+            <ul id="menu-top" class="nav-top-items">
+                
+                    <li class="menu-item">
+                        <a href="/archives">
+                            
+                            
+                                Archives
+                            
+                        </a>
+                    </li>
+                
+                    <li class="menu-item">
+                        <a href="/about">
+                            
+                            
+                                About
+                            
+                        </a>
+                    </li>
+                
+            </ul>
+        
+  </nav>
+</div>
+
+      </header>
+      <div id="content">
+        
+    <div id="primary">
+        
+  <article class="post">
+    <header class="post-header">
+      <h1 class="post-title">
+        
+          Innodb锁和MVCC详解
+        
+      </h1>
+
+      <time class="post-time">
+          2019-03-29
+      </time>
+    </header>
+
+
+
+    
+            <div class="post-content">
+            <blockquote>
+<p>了解Innodb的锁和MVCC前，我们应该先了解MySQL支持的存储引擎及事务，以及各个事务隔离级别的区别</p>
+<p>Innodb引擎介绍官方文档地址：<a href="https://dev.mysql.com/doc/refman/8.0/en/innodb-storage-engine.html" target="_blank" rel="noopener">https://dev.mysql.com/doc/refman/8.0/en/innodb-storage-engine.html</a></p>
+</blockquote>
+<p>目录：</p>
+<!-- toc -->
+<ul>
+<li><a href="#存储引擎">存储引擎</a><ul>
+<li><a href="#memory引擎">MEMORY引擎</a></li>
+<li><a href="#archive引擎">ARCHIVE引擎</a></li>
+<li><a href="#myisam引擎">MyISAM引擎</a></li>
+<li><a href="#innodb引擎">InnoDB引擎</a></li>
+</ul>
+</li>
+<li><a href="#事务">事务</a><ul>
+<li><a href="#事务日志redo-log和undo-log">事务日志Redo log和Undo log</a><ul>
+<li><a href="#redo-log">Redo Log</a></li>
+<li><a href="#undo-log">Undo Log</a><ul>
+<li><a href="#purge流程">Purge流程</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#并发事务处理带来的问题">并发事务处理带来的问题</a></li>
+<li><a href="#事务隔离级别">事务隔离级别</a></li>
+</ul>
+</li>
+<li><a href="#锁">锁</a><ul>
+<li><a href="#共享锁和排他锁">共享锁和排他锁</a></li>
+<li><a href="#意向共享锁和意向排它锁">意向共享锁和意向排它锁</a></li>
+<li><a href="#临键锁-next-key-locks">临键锁 Next-Key Locks</a></li>
+<li><a href="#间隙锁-gap-locks">间隙锁 Gap Locks</a></li>
+</ul>
+</li>
+<li><a href="#mvcc">MVCC</a><ul>
+<li><a href="#innodb的隐藏列">Innodb的隐藏列</a></li>
+<li><a href="#mvcc实现">MVCC实现</a></li>
+<li><a href="#innodb的可见性判断">Innodb的可见性判断</a></li>
+</ul>
+</li>
+</ul>
+<!-- tocstop -->
+<h1><span id="存储引擎">存储引擎</span></h1><p>MySQL的数据用不同的技术存储在文件或者内存中。每一种技术都使用不同的存储机制、索引技巧、锁定水平并且最终提供广泛的不同的功能和能力。通过选择不同的技术，可以获得特定的功能，从而改善应用的整体功能。</p>
+<p>在MySQL中，可以使用<code>show engines;</code>命令查询存储引擎</p>
+<p><img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/engines.png" alt></p>
+<p>可以看到MySQL给用户提供了很多存储引擎，数据库中的每一个表都可以使用不同的存储引擎。Support表示某种引擎是否能使用：YES表示可以使用、NO表示不能使用、DEFAULT表示该引擎为当前默认的存储引擎 。下面来介绍一下其中几种常用的引擎。</p>
+<h2><span id="memory引擎">MEMORY引擎</span></h2><p>Memory存储引擎的数据存储在内存中，IO效率很高，但是服务重启时数据会丢失。</p>
+<p>特点：</p>
+<ol>
+<li>Memory存储引擎支持hash索引和B树索引，默认hash索引</li>
+<li>存储在Memory数据表里的数据必须使用的是长度不变的格式，所以BLOB和TEXT这样的长度可变的数据类型是不能使用的，VARCHAR在MySQL内部当做长度固定不变的CHAR类型，所以可以使用。</li>
+</ol>
+<h2><span id="archive引擎">ARCHIVE引擎</span></h2><p>Archive是归档的意思，在归档之后仅仅支持最基本的插入和查询两种功能。Archive拥有很好的压缩机制，它使用zlib压缩库，在记录被请求时会实时压缩，所以在使用大量的数据采集时可以使用。</p>
+<p>特点：</p>
+<ol>
+<li>只支持insert和select两种操作</li>
+<li>数据占用磁盘少</li>
+</ol>
+<h2><span id="myisam引擎">MyISAM引擎</span></h2><p>MyISAM存储引擎不支持事务，也不支持外键；访问速度快，对事务完整性没有要求或者以查询、插入为主的应用可以使用这个引擎来创建表。每个MyISAM在磁盘上存储成表定义文件、索引文件和数据文件3个文件</p>
+<p>特点：</p>
+<ol>
+<li>count(*)无需进行数据的扫描</li>
+<li>数据（MYD）和索引（MYI）分开存储</li>
+<li>表级锁</li>
+</ol>
+<h2><span id="innodb引擎">InnoDB引擎</span></h2><p>Mysql5.5及以后版本的默认存储引擎，innoDB存储引擎支持事务且引入了行级锁和外键约束等功能。</p>
+<p>特点：</p>
+<ol>
+<li>以聚集索引的形式进行数据存储</li>
+<li>支持事务的标准</li>
+<li>外键约束</li>
+<li>行级锁</li>
+</ol>
+<h1><span id="事务">事务</span></h1><p>innoDB与myISAM的最大不同有两点：一是支持事务；二是采用了行级锁。行级锁与表级锁本来就有许多不同之处，另外，事务的引入也带来了一些新问题。下面我们先介绍一点背景知识，然后详细讨论InnoDB的锁问题。</p>
+<p>事务是数据库操作的最小工作单元，是作为单个逻辑工作单元执行的一系列操作；是一组不可再分割的工作单元</p>
+<p>银行的账户转账就是一个典型的事务例子，一个账户的扣除余额操作和一个账号的增加余额操作是两条sql语句，但是必须保证同时成功或者同时失败。</p>
+<p><strong>事务ACID特性</strong></p>
+<ul>
+<li>原子性（Atomicity）<br>最小的工作单元，整个工作单元要么一起提交成功，要么全部失败回滚</li>
+<li>一致性（Consistency）<br>事务中操作的数据及状态改变是一致的，即写入资料的结果必须完全符合预设的规则，<br>不会因为出现系统意外等原因导致状态的不一致</li>
+<li>隔离性（Isolation）<br>一个事务所操作的数据在提交之前，对其他事务的可见性设定（一般设定为不可见）</li>
+<li>持久性（Durability）<br>事务所做的修改就会永久保存，不会因为系统意外导致数据的丢失</li>
+</ul>
+<h2><span id="事务日志redo-log和undo-log">事务日志Redo log和Undo log</span></h2><blockquote>
+<p>本段内容参考博客：<a href="https://www.cnblogs.com/f-ck-need-u/p/9010872.html" target="_blank" rel="noopener">详细分析MySQL事务日志</a></p>
+</blockquote>
+<p>innodb事务日志包括redo log和undo log。redo log是重做日志,防止发生故障时有脏页未写入磁盘，保证了事务的持久性；undo log是回滚日志，提供回滚操作，保证了事务的一致性。</p>
+<p>redo log是物理日志，记录的是数据页的物理修改；undo log是逻辑日志，根据每行记录进行记录。</p>
+<h3><span id="redo-log">Redo Log</span></h3><p>redo log包括两部分：一是内存中的日志缓冲(redo log buffer)，该部分日志是易失性的；二是磁盘上的重做日志文件(redo log file)，该部分日志是持久化的。</p>
+<p>innodb在事务提交的时候，必须先将该事务的所有事务日志写入到磁盘上的redo log和undo log中进行持久化。</p>
+<p>为了确保每次日志都能写入到事务日志文件中，在每次将log buffer中的日志写入日志文件的过程中都会调用一次操作系统的fsync操作。MySQL的log buffer处于用户空间的内存中，写入到磁盘上的log file中，中间还要经过操作系统内核空间的os buffer，调用fsync()的作用就是将OS buffer中的日志刷到磁盘上的log file中。</p>
+<p>也就是说，从redo log buffer写日志到磁盘的redo log file中，过程如下： </p>
+<p><img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/redo-fsync.png" alt></p>
+<p>MySQL支持用户自定义在commit时如何将log buffer中的日志刷log file中。这种控制通过变量 </p>
+<p><code>innodb_flush_log_at_trx_commit</code> 的值来决定。该变量有3种值：0、1、2，默认为1。</p>
+<ul>
+<li>设置为0的时候，事务提交时不会将log buffer中日志写入到os buffer，而是每秒写入os buffer并调用fsync()写入log file。也就是说设置为0时是每秒刷新写入到磁盘中的，当系统崩溃，会丢失1秒钟的数据。</li>
+<li>设置为1的时候，事务每次提交都会将log buffer中的日志写入os buffer并调用fsync()写入log file。这种方式即使系统崩溃也不会丢失任何数据，但是因为每次提交都写入磁盘，IO的性能较差。</li>
+<li>设置为2的时候，每次提交都写入到os buffer，然后是每秒调用fsync()将os buffer中的日志写入到log file 。</li>
+</ul>
+<p><img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/redo-commit-log.png" alt></p>
+<h3><span id="undo-log">Undo Log</span></h3><p>undo log有两个作用：提供回滚和MVCC,MVCC后文会详细介绍。</p>
+<p>在数据修改的时候，不仅记录了redo，还记录了相对应的undo，事务失败或回滚了，可以借助undo进行回滚。</p>
+<p> undo log和redo log记录物理日志不一样，它是逻辑日志。<strong>可以认为当delete一条记录时，undo log中会记录一条对应的insert记录，反之亦然，当update一条记录时，它记录一条对应相反的update记录。</strong></p>
+<p>当执行rollback时，就可以从undo log中的逻辑记录读取到相应的内容并进行回滚。应用到MVCC的时候，也是通过undo log来实现的：当读取的某一行被其他事务锁定时，它可以从undo log中分析出该行记录以前的数据是什么，从而提供该行版本信息，让用户实现非锁定一致性读取。</p>
+<p><strong>undo log是采用段(segment)的方式来记录的，每个undo操作在记录的时候占用一个undo log segment。</strong></p>
+<p>undo log也会产生redo log，因为undo log也要实现持久性保护。</p>
+<h4><span id="purge流程">Purge流程</span></h4><p>当事务提交的时候，innodb不会立即删除undo log，因为后续还可能会用到undo log，如隔离级别为repeatable read时，事务读取的都是开启事务时的最新提交行版本，只要该事务不结束，该行版本就不能删除。</p>
+<p>但是在事务提交的时候，会将该事务对应的undo log放入到删除列表中，通过purge线程来删除。</p>
+<p>undo log记录delete和update操作（insert操作无需分析，就是插入行而已)</p>
+<ul>
+<li>delete操作实际上不会直接删除，而是将delete对象打上delete flag，标记为删除，最终的删除操作是purge线程完成的。</li>
+<li>update分为两种情况：update的列是否是主键列。<ul>
+<li>如果不是主键列，在undo log中直接反向记录是如何update的。即update是直接进行的。</li>
+<li>如果是主键列，update分两部执行：先删除该行，再插入一行目标行。</li>
+</ul>
+</li>
+</ul>
+<h2><span id="并发事务处理带来的问题">并发事务处理带来的问题</span></h2><p>相对于串行处理来说，并发事务处理大大增加了数据库资源的利用率，提高数据库系统的事务吞吐量，从而可以支持更多的用户。但并发事务处理也会带来一些问题，主要包括以下几种情况。</p>
+<ul>
+<li><p>更新丢失（Lost Update）</p>
+<p>当两个或多个事务选择同一行，然后基于最初选定的值更新该行时，由于每个事务都不知道其他事务的存在，就会发生丢失更新问题；最后的更新覆盖了由其他事务所做的更新。</p>
+</li>
+<li><p>脏读（Dirty Reads）</p>
+<p>一个事务正在对一条记录做修改，在这个事务完成并提交前，这条记录的数据就处于不一致状态；这时，另一个事务也来读取同一条记录，第二个事务读取了这些“脏”数据，并据此做进一步的处理，就会产生未提交的数据依赖关系。这种现象被叫做”脏读”。</p>
+</li>
+<li><p>不可重复读（Non-Repeatable Reads）</p>
+<p>一个事务在读取某些数据后的某个时间再次读取以前读过的数据，却发现其读出的数据已经发生了改变、或某些记录已经被删除了。这种现象就叫做“不可重复读”。</p>
+</li>
+<li><p>幻读（Phantom Reads）</p>
+<p>一个事务按相同的查询条件重新读取以前检索过的数据，却发现其他事务插入了满足其查询条件的新数据，这种现象就称为“幻读”。</p>
+</li>
+</ul>
+<h2><span id="事务隔离级别">事务隔离级别</span></h2><p>在上面讲到的并发事务处理带来的问题中，“更新丢失”通常是应该是应用程序对要更新的数据加必要的锁来解决，防止更新丢失是应用的责任。</p>
+<p>“脏读”、“不可重复读”和“幻读”，其实都是数据库读一致性问题，必须由数据库提供一定的事务隔离机制来解决。数据库实现事务隔离的方式，基本上可分为以下两种。</p>
+<ul>
+<li>在读取数据前，对其加锁，阻止其他事务对数据进行修改。</li>
+<li>不加锁，通过一定机制生成一个数据请求时间点的一致性数据快照，并用这个快照来提供一定级别的一 致性读取。从用户的角度来看，好像是数据库可以提供同一数据的多个版本，因此，这种技术叫做数据多版本并发控制（MultiVersion Concurrency Control，简称MVCC），也经常称为多版本数据库。</li>
+</ul>
+<p>数据库的事务隔离越严格，并发副作用越小，但代价也就越大，因为事务隔离实质上就是使事务在一定程度上 “串行化”进行，显然这与“并发”是矛盾的。并且不同的应用对读一致性和事务隔离程度的要求也是不同的，有些应用对“不可重复读”和“幻读”并不敏感，可能更关心数据并发访问的能力。 </p>
+<p>为了解决“隔离”与“并发”的矛盾，ISO/ANSI SQL92定义了4个事务隔离级别，每个级别的隔离程度不同，允许出现的副作用也不同，应用可以根据自己的业务逻辑要求，通过选择不同的隔离级别来平衡 “隔离”与“并发”的矛盾。</p>
+<ul>
+<li><p>Read Uncommitted（未提交读）</p>
+<p>事务未提交时的数据对其他事务也是可见的，这是最低的隔离级别</p>
+</li>
+<li><p>Read Committed（提交读）</p>
+<p>一个事务开始之后，只能看到自己提交的事务所做的修改，解决了脏读问题</p>
+</li>
+<li><p>Repeatable Read (可重复读)</p>
+<p>在同一个事务中多次读取同样的数据结果是一样的，解决了不可重复读问题，这种隔离级别未定义解决幻读的问题，在innodb中通过临键锁解决了幻读问题。</p>
+</li>
+<li><p>Serializable（串行化）</p>
+<p>最高的隔离级别，强制事务的串行执行</p>
+</li>
+</ul>
+<p>需要说明的是，具体数据库并不一定完全实现了上述4个隔离级别，例如Oracle只提供Read committed和Serializable标准，还提供自己定义的隔离级别；MySQL 支持4个隔离级别，innodb通过锁和MVCC机制实现。</p>
+<h1><span id="锁">锁</span></h1><p>锁用于管理不同事务对共享资源的并发访问，在读取数据前，对其加锁，阻止其他事务对数据进行修改。</p>
+<p>表锁与行锁的区别：</p>
+<ul>
+<li>锁定粒度：表锁锁定的粒度比行锁大</li>
+<li>加锁效率：表锁加锁的效率比行锁快</li>
+<li>冲突概率：表锁冲突的概率比行锁高</li>
+<li>并发性能：表锁并发的性能比行锁低</li>
+</ul>
+<h2><span id="共享锁和排他锁">共享锁和排他锁</span></h2><p><strong>共享锁:</strong><br>    又称读锁，共享锁是多个事务对于同一数据可以共享一把锁，都能访问到数据，但是只能读不能修改;</p>
+<p>加锁方式：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> table_name <span class="keyword">WHERE</span> ... <span class="keyword">LOCK</span> <span class="keyword">IN</span> <span class="keyword">SHARE</span> <span class="keyword">MODE</span>;</span><br></pre></td></tr></table></figure>
+<p><strong>排他锁:</strong><br>    又称写锁，排他锁不能与其他锁并存，如一个事务获取了一个数据行的排他锁，其他事务就不能再获取该行的锁，只有该获取了排他锁的事务是可以对数据行进行读取和修改（其他事务要读取数据可来自于快照）</p>
+<p>delete / update / insert 默认加上写锁</p>
+<p>加锁方式:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> table_name <span class="keyword">WHERE</span> ... <span class="keyword">FOR</span> <span class="keyword">UPDATE</span></span><br></pre></td></tr></table></figure>
+<p><strong>InnoDB的行锁是怎么实现的？</strong></p>
+<p>innoDB的行锁是通过给索引上的索引项加锁来实现的。只有通过索引条件进行数据检索，innoDB才使用行级锁，否则，innoDB将锁住索引的所有记录。</p>
+<h2><span id="意向共享锁和意向排它锁">意向共享锁和意向排它锁</span></h2><p><strong>意向共享锁：</strong></p>
+<p>​    表示事务准备给数据行加入共享锁，即一个数据行加共享锁前必须先取得该表的意向共享锁，意向共享锁之间是可以相互兼容的。</p>
+<p><strong>意向排它锁:</strong></p>
+<p>​    表示事务准备给数据行加入排他锁，即一个数据行加排他锁前必须先取得该表的意向排它锁，意向排它锁之间是可以相互兼容的。</p>
+<p>意向锁是InnoDB数据操作之前自动加的，不需要用户干预。</p>
+<p>当事务想去进行锁表时，先判断意向锁是否存在，存在时则可快速返回该表不能启用表锁。</p>
+<h2><span id="临键锁-next-key-locks">临键锁 Next-Key Locks</span></h2><p>临键锁 ：锁住记录+区间<br>    当sql执行按照索引进行数据的检索时,查询条件为范围查找（between and、&lt;、&gt;等）并有数据命中则此时SQL语句加上的锁为Next-Key Locks，锁住索引的记录+区间（左开右闭）</p>
+<p><img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/Next-Key-Locks.png" alt></p>
+<h2><span id="间隙锁-gap-locks">间隙锁 Gap Locks</span></h2><p>间隙锁：锁住数据不存在的区间<br>    当sql执行按照索引进行数据的检索时，查询条件的数据不存在，这时SQL语句加上的锁即为Gap Locks，锁住索引不存在的区间（左开右开）</p>
+<p><img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/gap.png" alt></p>
+<h1><span id="mvcc">MVCC</span></h1><p>MVCC：Multiversion concurrency control (多版本并发控制)</p>
+<p>​    并发访问(读或写)数据库时，对正在事务内处理的数据做多版本的管理。以达到用来避免写操作的堵塞，从而引发读操作的并发问题。</p>
+<p>MVCC主要是为Repeatable-Read级别做的。在此隔离级别下，不同客户端所示的数据相互隔离，互相更新不可见</p>
+<h2><span id="innodb的隐藏列">Innodb的隐藏列</span></h2><p>innodb的内部实现中为每一行数据增加了三个隐藏列用于实现MVCC。</p>
+<table>
+<thead>
+<tr>
+<th>列名</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DB_TRX_ID</td>
+<td>插入或更新的事务id，删除在内部被视为更新，并设置删除标记位</td>
+</tr>
+<tr>
+<td>DB_ROLL_PTR</td>
+<td>undo log指针，指向对应记录当前的undo log</td>
+</tr>
+<tr>
+<td>DB_ROW_ID</td>
+<td>行ID，用来生成默认聚集索引</td>
+</tr>
+</tbody>
+</table>
+<h2><span id="mvcc实现">MVCC实现</span></h2><blockquote>
+<p>图片例子出自&lt;&lt;唐成－2016PG大会-数据库多版本实现内幕&gt;&gt;</p>
+</blockquote>
+<p><img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/mvcc-insert.png" alt></p>
+<p>当插入一条新数据时，记录插入数据的事务id，且对应的回滚段指针为NULL</p>
+<p><img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/mvcc-update.png" alt></p>
+<p>修改数据时，DB_TRX_ID记录修改数据的事务id，如果是删除数据的操作，则设置删除标识，最终的删除操作由purge线程完成。同时，purge线程会查询比当前最老的事务id还早的undo log并删除它们。</p>
+<h2><span id="innodb的可见性判断">Innodb的可见性判断</span></h2><p><strong>可见性比较的方法</strong></p>
+<ul>
+<li>并不是直接使用当前的事务id与表中各个数据行上的事务id去比较。</li>
+<li>在每个事务开始时，会将当前系统中的所有活跃事务拷贝到一个列表中(read view)，根据read view最早的一个事务id和最晚的一个事务id来做比较；这样就能确保在当前事务之前没有提交的事务及后续启动事务的变更在当前的事务中是看不到的。</li>
+<li>当然，当前事务自身的变更还是需要看到的。</li>
+</ul>
+<p><strong>可见性判断的流程</strong></p>
+<p>当开始一个事务时，把当前系统中活动的事务id都拷贝到一个列表中，这个列表中最早的活动事务id为tmin，最晚的活动事务id为tmax。</p>
+<p>当读到一行时，该行上的当前事务id为tid，当前数据行是否可见的逻辑见下图</p>
+<p><img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/read-view-revise.png" alt></p>
+<p>感谢阅读，如有疑惑可以留下评论。</p>
+
+            </div>
+          
+
+    
+      <footer class="post-footer">
+      <ul class="post-copyright">
+        <li class="post-copyright-author">
+            <span>本文作者：</span>Jin Jin
+        </li>
+        <li class="post-copyright-link">
+          <span>本文链接：</span>
+          <a href="https://jinzzzzz.github.io//mysql/mysql-innodb.html" title="Innodb锁和MVCC详解">https://jinzzzzz.github.io/mysql/mysql-innodb.html</a>
+        </li>
+        <li class="post-copyright-license">
+          <span>版权： </span>
+          本站文章均采用 <a href="http://creativecommons.org/licenses/by-nc-sa/3.0/cn/" rel="external nofollow" target="_blank">CC BY-NC-SA 3.0 CN</a> 许可协议，请勿用于商业，转载注明出处！
+        </li>
+      </ul>
+		
+		<div class="post-tags">
+		  
+			<a href="/tags/MySQL/">MySQL</a>
+		  
+		</div>
+		
+
+        
+        
+  <nav class="post-nav">
+    
+      <a class="prev" href="/spring/spring-mvc-demo.html">
+        <i class="iconfont icon-left"></i>
+        <span class="prev-text nav-default">手写Spring(一) 实现简易版Spring MVC</span>
+        <span class="prev-text nav-mobile">Prev</span>
+      </a>
+    
+    
+      <a class="next" href="/mysql/mysql-index.html">
+        <span class="next-text nav-default">MySQL理解索引B+树</span>
+        <span class="prev-text nav-mobile">Next</span>
+        <i class="iconfont icon-right"></i>
+      </a>
+    
+  </nav>
+
+        
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+      </footer>
+    
+  </article>
+
+    </div>
+
+      </div>
+      
+        
+
+
+
+
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
+
+    
+    
+    
+    
+    
+    
+
+    <div id="gitalk-container"></div>
+
+    <script>
+        var gitalk = new Gitalk({
+            clientID: '217672eb040280538293',
+            clientSecret: '5a950867142dbcfd9fdc3de4491455bd3651c1a8',
+            repo: 'jinzzzzz.github.io',
+            owner: 'jinzzzzz',
+            admin: 'jinzzzzz',
+            id: location.pathname,      // Ensure uniqueness and length less than 50
+            distractionFreeMode: 'false'  // Facebook-like distraction free mode
+        })
+
+        gitalk.render('gitalk-container')
+    </script>
+
+
+      
+      <footer id="colophon"><span class="copyright-year">
+    
+        &copy;
+    
+        2018 -
+    
+    2019
+    <span class="footer-author">Jin Jin.</span>
+    <span class="power-by">
+        Powered by <a class="hexo-link" href="https://hexo.io/">Hexo</a> and <a class="theme-link" href="https://github.com/frostfan/hexo-theme-polarbear">Polar Bear</a>
+    </span>
+</span>
+
+      </footer>
+
+      <div class="back-to-top" id="back-to-top">
+        <i class="iconfont icon-up"></i>
+      </div>
+    </div>
+    
+
+
+
+
+  
+    <script type="text/javascript" src="/lib/jquery/jquery-3.1.1.min.js"></script>
+  
+
+  
+
+
+
+    <script type="text/javascript" src="/js/src/theme.js?v=1.1"></script>
+<script type="text/javascript" src="/js/src/bootstrap.js?v=1.1"></script>
+
+<!--prettify代码高亮脚本引入-->
+
+
+  </body>
+</html>
