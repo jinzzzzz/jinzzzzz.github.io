@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html>
+<head><meta name="generator" content="Hexo 3.8.0">
+    
+
+    
+
+    
+
+
+
+    <meta charset="utf-8">
+    
+    
+    
+    <link rel="canonical" href="true/mysql/mysql-innodb.html">
+    
+    
+    <title>Innodb中的锁机制及MVCC原理 | JinJin&#39;s Blog | 欲渡黄河冰塞川，将登太行雪满山</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    
+    <meta name="theme-color" content="#3F51B5">
+    
+    
+    <meta name="keywords" content="MySQL">
+    <meta name="description" content="Innodb引擎的官方文档地址：https://dev.mysql.com/doc/refman/8.0/en/innodb-storage-engine.html 了解Innodb的锁和MVCC前，我们应该先了解MySQL支持的存储引擎及事务，以及各个事务隔离级别的区别  存储引擎MySQL的存储引擎是插件式的体系结构，每个存储引擎都有其各自的特点，我们可以根据具体的应用需求使用不同的存储引擎">
+<meta name="keywords" content="MySQL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Innodb中的锁机制及MVCC原理">
+<meta property="og:url" content="https://jinjinz.top/mysql/mysql-innodb.html">
+<meta property="og:site_name" content="JinJin&#39;s Blog">
+<meta property="og:description" content="Innodb引擎的官方文档地址：https://dev.mysql.com/doc/refman/8.0/en/innodb-storage-engine.html 了解Innodb的锁和MVCC前，我们应该先了解MySQL支持的存储引擎及事务，以及各个事务隔离级别的区别  存储引擎MySQL的存储引擎是插件式的体系结构，每个存储引擎都有其各自的特点，我们可以根据具体的应用需求使用不同的存储引擎">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/engines.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/redo-fsync.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/gap.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/Next-Key-Locks.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/mvcc-insert.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/mvcc-update.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/read-view-revise.png">
+<meta property="og:updated_time" content="2019-07-30T08:40:05.304Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Innodb中的锁机制及MVCC原理">
+<meta name="twitter:description" content="Innodb引擎的官方文档地址：https://dev.mysql.com/doc/refman/8.0/en/innodb-storage-engine.html 了解Innodb的锁和MVCC前，我们应该先了解MySQL支持的存储引擎及事务，以及各个事务隔离级别的区别  存储引擎MySQL的存储引擎是插件式的体系结构，每个存储引擎都有其各自的特点，我们可以根据具体的应用需求使用不同的存储引擎">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/engines.png">
+    
+        <link rel="alternate" type="application/atom+xml" title="JinJin&#39;s Blog" href="/atom.xml">
+    
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/css/style.css?v=1.7.2">
+    <script>window.lazyScripts=[]</script>
+
+    <!-- custom head -->
+    
+
+</head>
+
+<body>
+    <div id="loading" class="active"></div>
+
+    <aside id="menu" class="hide">
+  <div class="inner flex-row-vertical">
+    <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menu-off">
+        <i class="icon icon-lg icon-close"></i>
+    </a>
+    <div class="brand-wrap" style="background-image:url(/img/brand.jpg)">
+      <div class="brand">
+        <a href="/" class="avatar waves-effect waves-circle waves-light">
+          <img src="/img/avatar.png">
+        </a>
+        <hgroup class="introduce">
+          <h5 class="nickname">Jin Jin</h5>
+          <a href="mailto:jinmailon@gmail.com" title="jinmailon@gmail.com" class="mail">jinmailon@gmail.com</a>
+        </hgroup>
+      </div>
+    </div>
+    <div class="scroll-wrap flex-col">
+      <ul class="nav">
+        
+            <li class="waves-block waves-effect">
+              <a href="/">
+                <i class="icon icon-lg icon-home"></i>
+                home
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/archives">
+                <i class="icon icon-lg icon-archives"></i>
+                Archives
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/tags">
+                <i class="icon icon-lg icon-tags"></i>
+                Tags
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="https://github.com/jinzzzzz" target="_blank">
+                <i class="icon icon-lg icon-github"></i>
+                Github
+              </a>
+            </li>
+        
+      </ul>
+    </div>
+  </div>
+</aside>
+
+    <main id="main">
+        <header class="top-header" id="header">
+    <div class="flex-row">
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light on" id="menu-toggle">
+          <i class="icon icon-lg icon-navicon"></i>
+        </a>
+        <div class="flex-col header-title ellipsis">Innodb中的锁机制及MVCC原理</div>
+        
+        <div class="search-wrap" id="search-wrap">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="back">
+                <i class="icon icon-lg icon-chevron-left"></i>
+            </a>
+            <input type="text" id="key" class="search-input" autocomplete="off" placeholder="输入感兴趣的关键字">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="search">
+                <i class="icon icon-lg icon-search"></i>
+            </a>
+        </div>
+        
+        
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menuShare">
+            <i class="icon icon-lg icon-share-alt"></i>
+        </a>
+        
+    </div>
+</header>
+<header class="content-header post-header">
+
+    <div class="container fade-scale">
+        <h1 class="title">Innodb中的锁机制及MVCC原理</h1>
+        <h5 class="subtitle">
+            
+                <time datetime="2019-03-29T09:31:56.000Z" itemprop="datePublished" class="page-time">
+  2019-03-29
+</time>
+
+
+	<ul class="article-category-list"><li class="article-category-list-item"><a class="article-category-list-link" href="/categories/mysql/">mysql</a></li></ul>
+
+            
+        </h5>
+    </div>
+
+    
+
+
+</header>
+
+
+<div class="container body-wrap">
+    
+    <aside class="post-widget">
+        <nav class="post-toc-wrap post-toc-shrink" id="post-toc">
+            <h4>目录</h4>
+            <ol class="post-toc"><li class="post-toc-item post-toc-level-1"><a class="post-toc-link" href="#存储引擎"><span class="post-toc-text">存储引擎</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#MEMORY引擎"><span class="post-toc-text">MEMORY引擎</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#ARCHIVE引擎"><span class="post-toc-text">ARCHIVE引擎</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#MyISAM引擎"><span class="post-toc-text">MyISAM引擎</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#InnoDB引擎"><span class="post-toc-text">InnoDB引擎</span></a></li></ol></li><li class="post-toc-item post-toc-level-1"><a class="post-toc-link" href="#事务"><span class="post-toc-text">事务</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#事务日志"><span class="post-toc-text">事务日志</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#Redo-Log"><span class="post-toc-text">Redo Log</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#Undo-Log"><span class="post-toc-text">Undo Log</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#Purge线程"><span class="post-toc-text">Purge线程</span></a></li></ol></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#并发事务"><span class="post-toc-text">并发事务</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#隔离级别"><span class="post-toc-text">隔离级别</span></a></li></ol></li><li class="post-toc-item post-toc-level-1"><a class="post-toc-link" href="#锁"><span class="post-toc-text">锁</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#共享锁和排他锁"><span class="post-toc-text">共享锁和排他锁</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#意向共享锁和意向排它锁"><span class="post-toc-text">意向共享锁和意向排它锁</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#记录锁"><span class="post-toc-text">记录锁</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#间隙锁"><span class="post-toc-text">间隙锁</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#Next-Key锁"><span class="post-toc-text">Next-Key锁</span></a></li></ol></li><li class="post-toc-item post-toc-level-1"><a class="post-toc-link" href="#MVCC"><span class="post-toc-text">MVCC</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#Innodb的隐藏列"><span class="post-toc-text">Innodb的隐藏列</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#MVCC实现"><span class="post-toc-text">MVCC实现</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#Innodb的可见性判断"><span class="post-toc-text">Innodb的可见性判断</span></a></li></ol></li></ol>
+        </nav>
+    </aside>
+
+
+<article id="post-mysql-innodb" class="post-article article-type-post fade" itemprop="blogPost">
+
+    <div class="post-card">
+        <h1 class="post-card-title">Innodb中的锁机制及MVCC原理</h1>
+        <div class="post-meta">
+            <time class="post-time" title="2019-03-29 17:31:56" datetime="2019-03-29T09:31:56.000Z" itemprop="datePublished">2019-03-29</time>
+
+            
+
+
+            
+<span id="busuanzi_container_page_pv" title="文章总阅读量" style="display:none">
+    <i class="icon icon-eye icon-pr"></i><span id="busuanzi_value_page_pv"></span>
+</span>
+
+
+        </div>
+        <div class="post-content" id="post-content" itemprop="postContent">
+            <blockquote>
+<p>Innodb引擎的官方文档地址：<a href="https://dev.mysql.com/doc/refman/8.0/en/innodb-storage-engine.html" target="_blank" rel="noopener">https://dev.mysql.com/doc/refman/8.0/en/innodb-storage-engine.html</a></p>
+<p>了解Innodb的锁和MVCC前，我们应该先了解MySQL支持的存储引擎及事务，以及各个事务隔离级别的区别</p>
+</blockquote>
+<h1 id="存储引擎"><a href="#存储引擎" class="headerlink" title="存储引擎"></a>存储引擎</h1><p>MySQL的存储引擎是插件式的体系结构，每个存储引擎都有其各自的特点，我们可以根据具体的应用需求使用不同的存储引擎表，现在最常用的存储引擎是Innodb。</p>
+<p>可以使用<code>show engines;</code>命令查询存储引擎</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/engines.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>MySQL中有很多存储引擎，数据库中的每一个表都可以使用不同的存储引擎。</p>
+<p><code>Support</code>表示某种引擎是否能使用：YES表示可以使用、NO表示不能使用、DEFAULT表示该引擎为当前默认的存储引擎 。</p>
+<h2 id="MEMORY引擎"><a href="#MEMORY引擎" class="headerlink" title="MEMORY引擎"></a>MEMORY引擎</h2><p>Memory存储引擎的数据存储在内存中，但是服务重启或发生崩溃时数据会丢失，该引擎适合用在临时表中存储临时数据。</p>
+<p>特点：</p>
+<ol>
+<li>Memory存储引擎支持hash索引和B+树索引，默认使用hash索引。</li>
+<li>存储在Memory数据表里的数据必须使用的是长度不变的格式，所以BLOB和TEXT这样的长度可变的数据类型是不能使用的，VARCHAR在MySQL内部当做长度固定不变的CHAR类型，所以可以使用。</li>
+</ol>
+<h2 id="ARCHIVE引擎"><a href="#ARCHIVE引擎" class="headerlink" title="ARCHIVE引擎"></a>ARCHIVE引擎</h2><p>Archive是归档的意思，在归档之后仅仅支持最基本的插入和查询两种功能。Archive拥有很好的压缩机制，它使用zlib算法将数据行压缩后进行存储，在记录被请求时会实时压缩，所以在使用大量的数据采集时可以使用，比较适合用来存储日志信息，提供高速的插入和压缩功能。</p>
+<p>特点：</p>
+<ol>
+<li>ARCHIVE引擎只支持insert和select操作，不支持update和delete操作。</li>
+<li>ARCHIVE引擎的数据文件比较小，占用的磁盘空间更少。</li>
+</ol>
+<h2 id="MyISAM引擎"><a href="#MyISAM引擎" class="headerlink" title="MyISAM引擎"></a>MyISAM引擎</h2><p>MyISAM存储引擎不支持事务，也不支持外键；访问速度快，对事务完整性没有要求或者以查询、插入为主的应用可以使用这个引擎来创建表。每个MyISAM在磁盘上存储成表定义文件、索引文件和数据文件3个文件</p>
+<p>特点：</p>
+<ol>
+<li>MyISAM引擎中存储表的数据和索引需要分开存储。</li>
+<li>MyISAM中不支持事务以及行锁，只能使用表级锁，所以并发性能较低。</li>
+</ol>
+<h2 id="InnoDB引擎"><a href="#InnoDB引擎" class="headerlink" title="InnoDB引擎"></a>InnoDB引擎</h2><p>Mysql5.5及以后版本的默认存储引擎，innoDB存储引擎支持事务且引入了行级锁和外键约束等功能。</p>
+<p>特点：</p>
+<ol>
+<li>InnoDB引擎在存储表时会以聚集索引的形式进行数据存储，也就是索引和数据文件在同一个文件上。</li>
+<li>InnoDB支持行锁，采用MVCC支持高并发，并且支持事务。</li>
+</ol>
+<h1 id="事务"><a href="#事务" class="headerlink" title="事务"></a>事务</h1><p>InnoDB与MyISAM的最大不同有两点：一是支持事务；二是采用了行级锁。行级锁与表级锁本来就有许多不同之处，另外，事务的引入也带来了一些新问题。下面我们先介绍一点背景知识，然后详细讨论InnoDB的锁问题。</p>
+<p>事务是数据库操作的最小工作单元，是作为单个逻辑工作单元执行的一系列操作；是一组不可再分割的工作单元</p>
+<p>银行的账户转账就是一个典型的事务例子，一个账户的扣除余额操作和一个账号的增加余额操作是两条sql语句，但是必须保证同时成功或者同时失败。</p>
+<p><strong>事务ACID特性</strong></p>
+<ul>
+<li>原子性（Atomicity）<br>最小的工作单元，整个工作单元要么一起提交成功，要么全部失败回滚</li>
+<li>一致性（Consistency）<br>事务中操作的数据及状态改变是一致的，即写入资料的结果必须完全符合预设的规则，不会因为出现系统意外等原因导致状态的不一致</li>
+<li>隔离性（Isolation）<br>一个事务所操作的数据在提交之前，对其他事务不可见</li>
+<li>持久性（Durability）<br>事务所做的修改就会永久保存，不会因为系统意外导致数据的丢失</li>
+</ul>
+<h2 id="事务日志"><a href="#事务日志" class="headerlink" title="事务日志"></a>事务日志</h2><p>InnoDB的事务日志有两种，分别是redo log和undo log。</p>
+<p>redo log是防止发生故障时有脏页未写入磁盘，保证了事务的持久性；</p>
+<p>undo log是回滚日志，提供回滚操作，保证了事务的一致性。</p>
+<p>redo log是物理日志，记录的是数据页的物理修改；undo log是逻辑日志，根据每行记录进行记录。</p>
+<h3 id="Redo-Log"><a href="#Redo-Log" class="headerlink" title="Redo Log"></a>Redo Log</h3><p>redo log有两部分，一个是内存中的日志缓冲(redo log buffer)，第二是磁盘上的重做日志文件(redo log file)。</p>
+<p>InnoDB在事务提交的时候，必须先将该事务的所有事务日志写入到磁盘上的重做日志文件 (redo log file) 和回滚日志文件 (undo log file) 中进行持久化。</p>
+<p>在将内存中的日志缓冲区的内容写到磁盘上的日志文件时，首先会将用户空间中的缓存区日志复制到操作系统的缓冲区中，之后调用操作系统的fsync()操作，操作系统才会将缓冲区中的日志写到磁盘中的文件中，过程如下：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/redo-fsync.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>我们可以通过变量 <code>innodb_flush_log_at_trx_commit</code> 的值来决定在提交事务时何时将日志文件持久化到磁盘中。该变量有3种值：0、1、2，默认为1。</p>
+<ul>
+<li>设置为0时，事务提交时不写入os buffer，而是每秒钟写入os buffer并调用fsync()写入log file。也就是说当系统崩溃时会丢失1秒的数据。</li>
+<li>设置为1时，事务每次提交时都会将日志缓冲区中的日志写入os buffer并调用fsync()写入日志文件。这样即使系统崩溃时也不会丢失数据，但是每次提交都需要写入磁盘，IO的性能较差。</li>
+<li>设置为2时，事务每次提交时都会将日志缓冲区中的日志写入os buffer，然后是每秒调用fsync()将os buffer中的日志写入到磁盘中的日志文件中 。</li>
+</ul>
+<h3 id="Undo-Log"><a href="#Undo-Log" class="headerlink" title="Undo Log"></a>Undo Log</h3><p>对数据进行修改时，需要记录redo log 和 undo log，redo log 保证了事务提交后数据的持久性，而 undo log 保证了如果事务失败，则可以借助undo log进行回滚操作。</p>
+<p>当删除一条记录时，undo log 中会记录删除前的数据以保证回滚时的数据一致性，执行修改时也一样，回滚日志中会记录更改前的数据。</p>
+<h3 id="Purge线程"><a href="#Purge线程" class="headerlink" title="Purge线程"></a>Purge线程</h3><p>当事务提交的时候，InnoDB不会立即删除undo log，因为InnoDB支持MVCC，所以后续还可能会用到undo log的记录，在默认的隔离级别repeatable read下，事务读取的都是开启事务时的最新提交行版本，只要该事务还没有结束，该行版本就不能被删除。</p>
+<p>但是在事务提交的时候，会将该事务对应的undo log放入到删除列表中，通过purge后台线程来删除。</p>
+<h2 id="并发事务"><a href="#并发事务" class="headerlink" title="并发事务"></a>并发事务</h2><p>相对于串行处理事务，并发事务可以提升数据库资源的利用率，但并发事务处理也会带来一些问题，主要包括以下几种情况。</p>
+<ul>
+<li><p>脏读</p>
+<p>在事务A对数据修改后但未提交时，此时事务B读取了事务A修改后的数据并产生后续处理，这种现象被叫做脏读，因为事务A的记录还没有提交，有可能会进行回滚或其他操作。</p>
+</li>
+<li><p>不可重复读</p>
+<p>一个事务读取的数据在某个时间后再次读取，但是读取出的数据却已经发生了改变，出现了不一致现象，这种现象被称为不可重复读。</p>
+</li>
+<li><p>幻读</p>
+<p>一个事务按相同的查询条件重新读取以前检索过的数据，却发现其他事务插入了满足其查询条件的新数据，这种现象被称为幻读。</p>
+</li>
+</ul>
+<h2 id="隔离级别"><a href="#隔离级别" class="headerlink" title="隔离级别"></a>隔离级别</h2><p>为了解决并发事务时会产生的问题，数据库需要提供事务隔离机制来解决，数据库实现事务隔离的方式，基本上可分为以下两种：</p>
+<ul>
+<li>第一种是在读取数据时加锁，其他事务就不能对数据进行修改了。</li>
+<li>第二种为不加锁，生成一个数据的不同时间点的数据快照，使用快照实现不同事务的读取。这种技术叫做数据多版本并发控制（MultiVersion Concurrency Control，简称MVCC）。</li>
+</ul>
+<p>数据库的事务隔离在一定程度上牺牲了并发的性能，但是不同的应用程序可能对于事务的隔离程度要求并不是太严格，所以在SQL92标准中定义了4个事务隔离级别，根据隔离程度允许出现的副作用不同，应用可以根据自己的需求来选择事务的隔离级别。</p>
+<ul>
+<li><p>Read Uncommitted（未提交读）</p>
+<p>事务未提交时的数据对其他事务也是可见的，这是最低的隔离级别，允许脏读，不可重复读及幻读。</p>
+</li>
+<li><p>Read Committed（已提交读，也称不可重复读）</p>
+<p>一个事务开始之后，只能看到提交的事务所做的修改，解决了脏读问题，但是会出现不可重复读和幻读。</p>
+</li>
+<li><p>Repeatable Read (可重复读)</p>
+<p>在同一个事务中多次读取同样的数据结果是一样的，解决了不可重复读问题，这种隔离级别未定义解决幻读的问题，在innodb中通过临键锁解决了幻读问题。</p>
+</li>
+<li><p>Serializable（串行化）</p>
+<p>最高的隔离级别，强制事务的串行执行。</p>
+</li>
+</ul>
+<h1 id="锁"><a href="#锁" class="headerlink" title="锁"></a>锁</h1><p>锁用于管理不同事务对共享资源的并发访问，在读取数据前，对其加锁，阻止其他事务对数据进行修改。</p>
+<p>表锁的并发性能相对于行锁较低，且行锁的锁定粒度和冲突概率也比表锁更小。</p>
+<h2 id="共享锁和排他锁"><a href="#共享锁和排他锁" class="headerlink" title="共享锁和排他锁"></a>共享锁和排他锁</h2><p>InnoDB中实现的行锁有两种类型，共享锁和排他锁。</p>
+<p><strong>共享锁 (shared lock):</strong> </p>
+<p>共享锁简称s锁，持有该行的s锁的事务允许读取行数据，多个事务对于同一行数据可以共享锁，但是只有读取数据的权限，没有对数据进行修改的权限。</p>
+<p><strong>排他锁 (exclusive lock)</strong>:</p>
+<p>排他锁简称x锁，持有该行的x锁的事务允许更新或删除行数据，如果一个事务获取了一个数据行的x锁，其他事务必须等待锁的释放。</p>
+<h2 id="意向共享锁和意向排它锁"><a href="#意向共享锁和意向排它锁" class="headerlink" title="意向共享锁和意向排它锁"></a>意向共享锁和意向排它锁</h2><p>InnoDB中可以支持多种粒度的锁定，允许表锁和行锁共存，意向锁就是表锁，有两种类型，意向共享锁和意向排它锁。意向锁的意思为稍后对表中的数据行所需的锁类型，可能是共享锁或排他锁。</p>
+<p><strong>意向共享锁 (intention shared lock)：</strong></p>
+<p>意向共享锁简称is锁，表示事务准备获取某些数据行的共享锁，在获取表中数据行的共享锁之前，必须首先获得表上的意向共享锁。</p>
+<p><strong>意向排它锁 (intention exclusive lock):</strong></p>
+<p>意向排它锁简称ix锁，表示事务准备获取某些数据行的排他锁，在获取表中数据行的排他锁之前，必须首先获得表上的意向排他锁。</p>
+<p>当事务想要获取数据行上的锁时，需要先获取意向锁，如果锁定请求与现有锁定冲突，则无法授予锁。</p>
+<h2 id="记录锁"><a href="#记录锁" class="headerlink" title="记录锁"></a>记录锁</h2><p><strong>记录锁 (record lock):</strong></p>
+<p>记录锁就就是对索引记录的锁定。即使表中没有创建索引，InnoDB也会创建一个隐藏的聚簇索引并且使用此索引来进行记录锁定。记录锁就是所谓的行锁。</p>
+<h2 id="间隙锁"><a href="#间隙锁" class="headerlink" title="间隙锁"></a>间隙锁</h2><p><strong>间隙锁 (gap lock)</strong>：</p>
+<p>间隙锁就是锁定索引记录之间的间隙，或者锁定在第一个索引记录之前或最后一个索引记录之后的间隙。</p>
+<p>以下sql语句将阻止其他事务将值15插入列column1中，因为该范围中之间的间隙已经被锁定。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> column1 <span class="keyword">from</span> table_name <span class="keyword">where</span> column1 &gt; <span class="number">10</span> <span class="keyword">and</span> column1 &lt; <span class="number">20</span> <span class="keyword">for</span> <span class="keyword">update</span></span><br></pre></td></tr></table></figure>
+<p>假设表中column1列的索引包含值<code>10</code>,<code>13</code>,<code>18</code>,<code>20</code>，那么该列索引中的间隙如下：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/gap.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>需要注意的是，锁定的间隙可能会跨越多个索引值，也可能为空。间隙锁只被用于事务级别为<code>Repeatable Read</code>中。</p>
+<h2 id="Next-Key锁"><a href="#Next-Key锁" class="headerlink" title="Next-Key锁"></a>Next-Key锁</h2><p><strong>next-key lock</strong> ：</p>
+<p>next-key锁是锁定索引记录中的记录及锁定索引记录之间的间隙，也就是记录锁和间隙锁的组合。</p>
+<p>Innodb执行行锁的锁定过程是，首先扫描表的索引，在满足条件的索引记录上设置共享锁或排他锁，这样行锁实际上就是锁定索引上的记录。</p>
+<p>锁定索引上的下一个索引同样会影响该索引记录之前的间隙，也就是说next-key锁是锁定索引记录中的记录加上锁定索引记录之前的间隙。</p>
+<p>假设表中column1列的索引包含值<code>10</code>,<code>13</code>,<code>18</code>,<code>20</code>，那么此索引的next-key锁包括以下几个区间，左开右闭。</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/Next-Key-Locks.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>对于第一个区间，锁定了索引中最小值之前的间隙，对于最后一个索引则锁定了索引中最大值之后的间隙。</p>
+<p>因为默认情况下InnoDB使用的隔离级别为<code>REPEATABLE READ</code>，而在这种隔离级别下，InnoDB使用Next-Key锁阻止了幻读现象。</p>
+<h1 id="MVCC"><a href="#MVCC" class="headerlink" title="MVCC"></a>MVCC</h1><p>MVCC：Multiversion concurrency control (多版本并发控制)</p>
+<p>Innodb的多版本并发控制允许在数据库事务在<code>Repeatable-Read</code>的隔离级别下时，事务执行一致性的读取操作。其他事务在进行修改行时，其他事务可以不用获取该行的锁，并可以直接查看该行更新前的值。</p>
+<h2 id="Innodb的隐藏列"><a href="#Innodb的隐藏列" class="headerlink" title="Innodb的隐藏列"></a>Innodb的隐藏列</h2><p>Innodb在内部为数据库中存储的每一行添加了三个隐藏列。</p>
+<table>
+<thead>
+<tr>
+<th>列名</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DB_TRX_ID</td>
+<td>插入或更新的事务id，删除在内部被视为更新，并设置删除标记位</td>
+</tr>
+<tr>
+<td>DB_ROLL_PTR</td>
+<td>undo log指针，指向对应记录当前的undo log</td>
+</tr>
+<tr>
+<td>DB_ROW_ID</td>
+<td>行ID，用来生成默认聚集索引</td>
+</tr>
+</tbody>
+</table>
+<h2 id="MVCC实现"><a href="#MVCC实现" class="headerlink" title="MVCC实现"></a>MVCC实现</h2><p>Innodb保存了已经被更改的数据行的旧版本信息，以支持并发和回滚等事务性的功能，这些信息保存在undo log中，Innodb使用undo log中的信息构建数据行的早期版本实现一致读取。</p>
+<p>当事务1执行<code>insert table_name(id,col1,col2,col3) value(10,1,2,3,4)</code>时，数据行如下：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/mvcc-insert.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>当事务2修改数据时，DB_TRX_ID记录修改数据的事务id，如果是删除数据的操作，则设置删除标识，最终的删除操作由purge线程完成。同时，purge线程会查询比当前最老的事务id还早的undo log并删除它们。</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/mvcc-update.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<h2 id="Innodb的可见性判断"><a href="#Innodb的可见性判断" class="headerlink" title="Innodb的可见性判断"></a>Innodb的可见性判断</h2><p><strong>可见性比较的方法</strong></p>
+<ul>
+<li>并不是直接使用当前的事务id与表中各个数据行上的事务id去比较。</li>
+<li>在每个事务开始时，会将当前系统中的所有活跃事务拷贝到一个列表中(read view)，根据read view最早的一个事务id和最晚的一个事务id来做比较；这样就能确保在当前事务之前没有提交的事务及后续启动事务的变更在当前的事务中是看不到的。</li>
+<li>当然，当前事务自身的变更还是需要看到的。</li>
+</ul>
+<p><strong>可见性判断的流程</strong></p>
+<p>当开始一个事务时，把当前系统中活动的事务id都拷贝到一个列表中，这个列表中最早的活动事务id为tmin，最晚的活动事务id为tmax。</p>
+<p>当读到一行时，该行上的当前事务id为tid，当前数据行是否可见的逻辑见下图：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/read-view-revise.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>如果事务需要获取一个数据行的数据，那么首先获取到数据行上的最后更新事务id，如果数据行上的更新事务id在活跃事务列表中小于最早的活动事务id，则可以直接获取该数据行的数据。</p>
+<p>如果数据行上的更新事务id并不小于最早的活动事务id，也不大于最晚的活动事务id，但是不在活跃事务列表中，则也可以直接获取该数据行的数据。</p>
+<p>如果数据行上的更新事务id大于最晚的活动事务id或者还在活跃事务列表中，则从undo log中取出对应的最新数据行，事务重新进行判断是否可以获取该数据行的数据。</p>
+
+        </div>
+
+        <blockquote class="post-copyright">
+    
+    <div class="content">
+        
+
+        
+        以上便是本篇博客的所有内容，感谢阅读，如有疑惑可以留下你的评论，谢谢！<br> 本篇文章地址：<a href="/mysql/mysql-innodb.html" target="_blank" rel="external">https://jinjinz.top/mysql/mysql-innodb.html</a>
+        
+    </div>
+    
+    <footer>
+        <a href="https://jinjinz.top">
+            <img src="/img/avatar.png" alt="Jin Jin">
+            Jin Jin
+        </a>
+    </footer>
+</blockquote>
+
+        
+<div class="page-reward">
+    <a id="rewardBtn" href="javascript:;" class="page-reward-btn waves-effect waves-circle waves-light">赏</a>
+</div>
+
+
+
+        <div class="post-footer">
+            
+	<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/MySQL/">MySQL</a></li></ul>
+
+
+            
+<div class="page-share-wrap">
+    
+
+<div class="page-share" id="pageShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=https://jinjinz.top/mysql/mysql-innodb.html&title=《Innodb中的锁机制及MVCC原理》 — JinJin's Blog&pic=https://jinjinz.top/img/avatar.png" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=https://jinjinz.top/mysql/mysql-innodb.html&title=《Innodb中的锁机制及MVCC原理》 — JinJin's Blog&source=分享Java相关技术,MySQL-锁-MVCC,设计模式,Spring源码分析" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=https://jinjinz.top/mysql/mysql-innodb.html" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《Innodb中的锁机制及MVCC原理》 — JinJin's Blog&url=https://jinjinz.top/mysql/mysql-innodb.html&via=https://jinjinz.top" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=https://jinjinz.top/mysql/mysql-innodb.html" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+
+    <a href="javascript:;" id="shareFab" class="page-share-fab waves-effect waves-circle">
+        <i class="icon icon-share-alt icon-lg"></i>
+    </a>
+</div>
+
+
+
+        </div>
+    </div>
+
+    
+<nav class="post-nav flex-row flex-justify-between">
+  
+    <div class="waves-block waves-effect prev">
+      <a href="/spring/spring-code.html" id="post-prev" class="post-nav-link">
+        <div class="tips"><i class="icon icon-angle-left icon-lg icon-pr"></i> Prev</div>
+        <h4 class="title">自己动手写一个Spring框架</h4>
+      </a>
+    </div>
+  
+
+  
+    <div class="waves-block waves-effect next">
+      <a href="/mysql/mysql-index.html" id="post-next" class="post-nav-link">
+        <div class="tips">Next <i class="icon icon-angle-right icon-lg icon-pl"></i></div>
+        <h4 class="title">MySQL中的索引认识及优化</h4>
+      </a>
+    </div>
+  
+</nav>
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<section class="comments" id="comments">
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+        var id = location.pathname
+        if (location.pathname.length > 50) {
+          id = location.pathname.replace(/\/\d+\/\d+\/\d+\//, '').replace('/', '').substring(0, 50)
+        }
+        const gitalk = new Gitalk({
+          clientID: '217672eb040280538293',
+          clientSecret: '5a950867142dbcfd9fdc3de4491455bd3651c1a8',
+          repo: 'jinzzzzz.github.io',
+          owner: 'jinzzzzz',
+          admin: ['jinzzzzz'],
+          id: id,      // Ensure uniqueness and length less than 50
+          title: document.title.split('|')[0],
+          distractionFreeMode: false  // Facebook-like distraction free mode
+        })
+
+        gitalk.render('gitalk-container')
+    </script>
+</section>
+
+
+
+
+</article>
+
+<div id="reward" class="page-modal reward-lay">
+    <a class="close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <h3 class="reward-title">
+        <i class="icon icon-quote-left"></i>
+        谢谢大爷~
+        <i class="icon icon-quote-right"></i>
+    </h3>
+    <div class="reward-content">
+        
+        <div class="reward-code">
+            <img id="rewardCode" src="/img/alipay.png" alt="打赏二维码">
+        </div>
+        
+    </div>
+</div>
+
+
+
+</div>
+
+        <footer class="footer">
+    <div class="top">
+        
+<p>
+    <span id="busuanzi_container_site_uv" style="display:none">
+        站点总访客数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span id="busuanzi_container_site_pv" style="display:none">
+        站点总访问量：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</p>
+
+
+        <p>
+            
+                <span><a href="/atom.xml" target="_blank" class="rss" title="rss"><i class="icon icon-lg icon-rss"></i></a></span>
+            
+            <span>博客内容遵循 <a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh">知识共享 署名 - 非商业性 - 相同方式共享 4.0 国际协议</a></span>
+        </p>
+    </div>
+    <div class="bottom">
+        <p><span>Jin Jin &copy; 2019</span>
+            <span>
+                
+                Power by <a href="http://hexo.io/" target="_blank">Hexo</a> Theme <a href="https://github.com/yscoder/hexo-theme-indigo" target="_blank">indigo</a>
+            </span>
+        </p>
+    </div>
+</footer>
+
+    </main>
+    <div class="mask" id="mask"></div>
+<a href="javascript:;" id="gotop" class="waves-effect waves-circle waves-light"><span class="icon icon-lg icon-chevron-up"></span></a>
+
+
+
+<div class="global-share" id="globalShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=https://jinjinz.top/mysql/mysql-innodb.html&title=《Innodb中的锁机制及MVCC原理》 — JinJin's Blog&pic=https://jinjinz.top/img/avatar.png" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=https://jinjinz.top/mysql/mysql-innodb.html&title=《Innodb中的锁机制及MVCC原理》 — JinJin's Blog&source=分享Java相关技术,MySQL-锁-MVCC,设计模式,Spring源码分析" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=https://jinjinz.top/mysql/mysql-innodb.html" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《Innodb中的锁机制及MVCC原理》 — JinJin's Blog&url=https://jinjinz.top/mysql/mysql-innodb.html&via=https://jinjinz.top" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=https://jinjinz.top/mysql/mysql-innodb.html" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+<div class="page-modal wx-share" id="wxShare">
+    <a class="close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMYAAADGCAAAAACs8KCBAAACIUlEQVR42u3aQW7CQAwF0N7/0lTqqhIC/vcMVZm8rFAgmbwsjD3211d83H6O35/vz9x/m5xPvt12YGBgfCzj9vS4f9AZO1/xOf4hFQMD4wKM/FES3vMA/Yg0uz8GBgZGstg6NQ/WGBgYGPlj5Unb7JcYGBgYsyI2CbJJubuyebehFsfAwPhAxsr22bs/v72/gYGB8e8Zt4WjLW7X2wAPr8XAwDia0aZ07Yb+SpJXt1ExMDAOZeRFabLkroSyRmJgYBzNyKNWUtzOUsO9fwMYGBjnMZ4Hu7awHGamwXbbi7YEBgbG0YzZZW2xmp/PQzYGBgZGvonWZmh5Cti+DgwMjCswksfNA2iSFOZXDVuYGBgYhzKSTbF8mRY8C+4YGBhXYOQhbzZgWid5o7thYGBcmTFrbbbFcJto1gEXAwPjYxmzZmEeNOuJj9EfAAYGxtmM9VJ2VqC2I2V1EYuBgXEQIxn/apuO68ll/VIwMDCOZqxsh7WBeFe1XbQwMTAwjmaspIPtQFgeM5dyWwwMjCMYswbk3gbDcMACAwPjAoy8xbhS0LbbebOGAQYGxnmMW3m0yF3sFyEbAwPjaMZs9GG9VfA3DQYMDIyTGCvb93nrcb1sfnEHDAyMCzDaqrddZpZKFq8JAwMDI2DkwbotUKPtOQwMDIzRaEU7/rUS4jEwMK7AmI18taNj7brDzBEDA+M4xmzEIUn49m6obQBjYGB8HuMbXC2Jh8X4mjIAAAAASUVORK5CYII=" alt="微信分享二维码">
+</div>
+
+
+
+
+    <script src="//cdn.bootcss.com/node-waves/0.7.4/waves.min.js"></script>
+<script>
+var BLOG = { ROOT: '/', SHARE: true, REWARD: true };
+
+
+</script>
+
+<script src="/js/main.min.js?v=1.7.2"></script>
+
+
+<div class="search-panel" id="search-panel">
+    <ul class="search-result" id="search-result"></ul>
+</div>
+<template id="search-tpl">
+<li class="item">
+    <a href="{path}" class="waves-block waves-effect">
+        <div class="title ellipsis" title="{title}">{title}</div>
+        <div class="flex-row flex-middle">
+            <div class="tags ellipsis">
+                {tags}
+            </div>
+            <time class="flex-col time">{date}</time>
+        </div>
+    </a>
+</li>
+</template>
+
+<script src="/js/search.min.js?v=1.7.2" async></script>
+
+
+
+
+
+
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+</body>
+</html>

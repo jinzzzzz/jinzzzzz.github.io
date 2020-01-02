@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html>
+<head><meta name="generator" content="Hexo 3.8.0">
+    
+
+    
+
+    
+
+
+
+    <meta charset="utf-8">
+    
+    
+    
+    <link rel="canonical" href="true/redis/redis-base.html">
+    
+    
+    <title>深入理解Redis的基础数据结构 | JinJin&#39;s Blog | 欲渡黄河冰塞川，将登太行雪满山</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    
+    <meta name="theme-color" content="#3F51B5">
+    
+    
+    <meta name="keywords" content="Redis">
+    <meta name="description" content="前言 Redis是一个K/V类型的数据库，Key的类型就是字符串，而Value可以支持不同类型，不仅限于简单的字符串，以下将分别介绍五种简单的数据类型中的数据结构：  二进制安全的字符串 列表，基于插入顺序进行排序的元素列表，一般会基于链表实现 哈希，每个字段关联一个value，字段和value都是string类型 集合，保存没有重复值的元素集合，元素中没有顺序 有序集合，与集合类似，但每个元素都">
+<meta name="keywords" content="Redis">
+<meta property="og:type" content="article">
+<meta property="og:title" content="深入理解Redis的基础数据结构">
+<meta property="og:url" content="https://jinjinz.top/redis/redis-base.html">
+<meta property="og:site_name" content="JinJin&#39;s Blog">
+<meta property="og:description" content="前言 Redis是一个K/V类型的数据库，Key的类型就是字符串，而Value可以支持不同类型，不仅限于简单的字符串，以下将分别介绍五种简单的数据类型中的数据结构：  二进制安全的字符串 列表，基于插入顺序进行排序的元素列表，一般会基于链表实现 哈希，每个字段关联一个value，字段和value都是string类型 集合，保存没有重复值的元素集合，元素中没有顺序 有序集合，与集合类似，但每个元素都">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/redis/quicklist.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/redis/hash.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/redis/hashtable.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/redis/zskiplist.png">
+<meta property="og:updated_time" content="2019-10-28T11:03:29.956Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="深入理解Redis的基础数据结构">
+<meta name="twitter:description" content="前言 Redis是一个K/V类型的数据库，Key的类型就是字符串，而Value可以支持不同类型，不仅限于简单的字符串，以下将分别介绍五种简单的数据类型中的数据结构：  二进制安全的字符串 列表，基于插入顺序进行排序的元素列表，一般会基于链表实现 哈希，每个字段关联一个value，字段和value都是string类型 集合，保存没有重复值的元素集合，元素中没有顺序 有序集合，与集合类似，但每个元素都">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/redis/quicklist.png">
+    
+        <link rel="alternate" type="application/atom+xml" title="JinJin&#39;s Blog" href="/atom.xml">
+    
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/css/style.css?v=1.7.2">
+    <script>window.lazyScripts=[]</script>
+
+    <!-- custom head -->
+    
+
+</head>
+
+<body>
+    <div id="loading" class="active"></div>
+
+    <aside id="menu" class="hide">
+  <div class="inner flex-row-vertical">
+    <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menu-off">
+        <i class="icon icon-lg icon-close"></i>
+    </a>
+    <div class="brand-wrap" style="background-image:url(/img/brand.jpg)">
+      <div class="brand">
+        <a href="/" class="avatar waves-effect waves-circle waves-light">
+          <img src="/img/avatar.png">
+        </a>
+        <hgroup class="introduce">
+          <h5 class="nickname">Jin Jin</h5>
+          <a href="mailto:jinmailon@gmail.com" title="jinmailon@gmail.com" class="mail">jinmailon@gmail.com</a>
+        </hgroup>
+      </div>
+    </div>
+    <div class="scroll-wrap flex-col">
+      <ul class="nav">
+        
+            <li class="waves-block waves-effect">
+              <a href="/">
+                <i class="icon icon-lg icon-home"></i>
+                home
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/archives">
+                <i class="icon icon-lg icon-archives"></i>
+                Archives
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/tags">
+                <i class="icon icon-lg icon-tags"></i>
+                Tags
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="https://github.com/jinzzzzz" target="_blank">
+                <i class="icon icon-lg icon-github"></i>
+                Github
+              </a>
+            </li>
+        
+      </ul>
+    </div>
+  </div>
+</aside>
+
+    <main id="main">
+        <header class="top-header" id="header">
+    <div class="flex-row">
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light on" id="menu-toggle">
+          <i class="icon icon-lg icon-navicon"></i>
+        </a>
+        <div class="flex-col header-title ellipsis">深入理解Redis的基础数据结构</div>
+        
+        <div class="search-wrap" id="search-wrap">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="back">
+                <i class="icon icon-lg icon-chevron-left"></i>
+            </a>
+            <input type="text" id="key" class="search-input" autocomplete="off" placeholder="输入感兴趣的关键字">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="search">
+                <i class="icon icon-lg icon-search"></i>
+            </a>
+        </div>
+        
+        
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menuShare">
+            <i class="icon icon-lg icon-share-alt"></i>
+        </a>
+        
+    </div>
+</header>
+<header class="content-header post-header">
+
+    <div class="container fade-scale">
+        <h1 class="title">深入理解Redis的基础数据结构</h1>
+        <h5 class="subtitle">
+            
+                <time datetime="2019-10-24T09:10:06.000Z" itemprop="datePublished" class="page-time">
+  2019-10-24
+</time>
+
+
+	<ul class="article-category-list"><li class="article-category-list-item"><a class="article-category-list-link" href="/categories/redis/">redis</a></li></ul>
+
+            
+        </h5>
+    </div>
+
+    
+
+
+</header>
+
+
+<div class="container body-wrap">
+    
+    <aside class="post-widget">
+        <nav class="post-toc-wrap post-toc-shrink" id="post-toc">
+            <h4>目录</h4>
+            <ol class="post-toc"><li class="post-toc-item post-toc-level-1"><a class="post-toc-link" href="#字符串"><span class="post-toc-text">字符串</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#SDS"><span class="post-toc-text">SDS</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#SDS与字符数组对比"><span class="post-toc-text">SDS与字符数组对比</span></a></li></ol></li><li class="post-toc-item post-toc-level-1"><a class="post-toc-link" href="#列表"><span class="post-toc-text">列表</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#ziplist"><span class="post-toc-text">ziplist</span></a></li></ol></li><li class="post-toc-item post-toc-level-1"><a class="post-toc-link" href="#哈希"><span class="post-toc-text">哈希</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#ziplist-1"><span class="post-toc-text">ziplist</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#hashtable"><span class="post-toc-text">hashtable</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#rehash"><span class="post-toc-text">rehash</span></a></li></ol></li></ol></li><li class="post-toc-item post-toc-level-1"><a class="post-toc-link" href="#集合"><span class="post-toc-text">集合</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#hashtable-1"><span class="post-toc-text">hashtable</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#intset"><span class="post-toc-text">intset</span></a></li></ol></li><li class="post-toc-item post-toc-level-1"><a class="post-toc-link" href="#有序集合"><span class="post-toc-text">有序集合</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#ziplist-2"><span class="post-toc-text">ziplist</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#skiplist"><span class="post-toc-text">skiplist</span></a></li></ol></li></ol>
+        </nav>
+    </aside>
+
+
+<article id="post-redis-base" class="post-article article-type-post fade" itemprop="blogPost">
+
+    <div class="post-card">
+        <h1 class="post-card-title">深入理解Redis的基础数据结构</h1>
+        <div class="post-meta">
+            <time class="post-time" title="2019-10-24 17:10:06" datetime="2019-10-24T09:10:06.000Z" itemprop="datePublished">2019-10-24</time>
+
+            
+
+
+            
+<span id="busuanzi_container_page_pv" title="文章总阅读量" style="display:none">
+    <i class="icon icon-eye icon-pr"></i><span id="busuanzi_value_page_pv"></span>
+</span>
+
+
+        </div>
+        <div class="post-content" id="post-content" itemprop="postContent">
+            <p><strong>前言</strong></p>
+<p>Redis是一个K/V类型的数据库，Key的类型就是字符串，而Value可以支持不同类型，不仅限于简单的字符串，以下将分别介绍五种简单的数据类型中的数据结构：</p>
+<ul>
+<li>二进制安全的字符串</li>
+<li>列表，基于插入顺序进行排序的元素列表，一般会基于链表实现</li>
+<li>哈希，每个字段关联一个value，字段和value都是string类型</li>
+<li>集合，保存没有重复值的元素集合，元素中没有顺序</li>
+<li>有序集合，与集合类似，但每个元素都与一个 score 的值关联，元素总是按照score字段来进行排序，因此可以获取最大的10个元素或是最小的10个元素等等操作。</li>
+</ul>
+<h1 id="字符串"><a href="#字符串" class="headerlink" title="字符串"></a>字符串</h1><p>Redis中的每个键值对，其实就是一个 <code>dictEntry</code> 结构，其中保存了key和value的指针，代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">dictEntry</span> &#123;</span></span><br><span class="line">    <span class="keyword">void</span> *key; <span class="comment">/* key */</span></span><br><span class="line">	<span class="keyword">union</span> &#123;</span><br><span class="line">		<span class="keyword">void</span> *val; <span class="keyword">uint64_t</span> u64; <span class="comment">/* value  */</span></span><br><span class="line">		<span class="keyword">int64_t</span> s64; <span class="keyword">double</span> d;</span><br><span class="line">	&#125; v;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">dictEntry</span> *<span class="title">next</span>;</span> </span><br><span class="line">&#125; dictEntry;</span><br></pre></td></tr></table></figure>
+<p>key的类型就是字符串，其指向的是Redis自定义的SDS类型，Redis基于C语言的字符数组简单实现了一个字符串的类型。</p>
+<p>而value的类型并不会直接指向SDS或是其他具体类型，而是一个 redisObject 类型，在这五种常用类型中，都是通过 redisObject 来存储的。</p>
+<p>redisObject 的定义代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">redisObject</span> &#123;</span></span><br><span class="line">    <span class="keyword">unsigned</span> type:<span class="number">4</span>; <span class="comment">/* 对象的类型，例如：OBJ_STRING、OBJ_LIST、OBJ_HASH、OBJ_SET、OBJ_ZSET */</span></span><br><span class="line">	<span class="keyword">unsigned</span> encoding:<span class="number">4</span>; <span class="comment">/* 数据结构内部编码 */</span></span><br><span class="line">	<span class="keyword">unsigned</span> lru:LRU_BITS; <span class="comment">/* 与内存回收相关 */</span></span><br><span class="line">	<span class="keyword">int</span> refcount; <span class="comment">/* 引用计数。*/</span></span><br><span class="line">	<span class="keyword">void</span> *ptr; <span class="comment">/* 指向对象实际的数据结构 */</span></span><br><span class="line">&#125; robj;</span><br></pre></td></tr></table></figure>
+<p>字符串的内部编码有三种：</p>
+<ol>
+<li>int，存储8个字节的整数值</li>
+<li>embstr，存储小于44个字节的字符串</li>
+<li>raw，存储大于44字节的字符串</li>
+</ol>
+<p>当使用 embstr 编码时，只需一次内存分配函数来分配一个连续的内存空间，在这个连续的内存空间中同时包含了 redisObject 和 SDS 两个结构，而 raw 编码需要两次内存分配来分别创建。同理，在释放内存空间时，embstr 仅需要释放一次，而 raw 编码需要调用两次释放函数。</p>
+<p>但是对于 embstr 编码的字符串对象来讲，只要这个字符串被修改了，字符串对象就会将编码转为 raw ，也就是说，embstr  编码的字符串对象实际上是只读的。</p>
+<p>而对于 int 编码的字符串对象，如果字符串对象被修改后不再是整数值，则编码同样会转为 raw 的字符串对象。</p>
+<h2 id="SDS"><a href="#SDS" class="headerlink" title="SDS"></a>SDS</h2><p>Redis没有使用C语言的字符数组作为字符串的实现，而是自定义了简单动态字符串(simple dynamic string)，简称为SDS，Redis使用SDS作为字符串的实现。</p>
+<p>在C语言中，如果使用字符数组实现长度为N的字符串，就需要使用长度N+1的字符数组来表示，且字符数组的最后一个元素必须是空字符 <code>\0</code> 。</p>
+<p>而Redis的SDS结构还是遵循C语言字符串中以空字符 <code>\0</code> 结尾的惯例，但这一字节的空间不会被计算到使用字符串的长度中，SDS的结构如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sdshdr</span> &#123;</span> </span><br><span class="line">    <span class="keyword">int</span> len; <span class="comment">/* 记录 buf 数组中已使用字节的数量,也就是字符串的长度 */</span></span><br><span class="line">	<span class="keyword">int</span> <span class="built_in">free</span>; <span class="comment">/* 记录 buf 数组中未使用字节的数量 */</span></span><br><span class="line">	<span class="keyword">char</span> buf[]; <span class="comment">/* 保存字符串的字节数组 */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>使用SDS存储字符串的好处有以下几点：</p>
+<ol>
+<li><p>字符串长度可以直接获取</p>
+<p>在字符数组中，无法记录字符串的长度信息，所以获取字符串的长度需要遍历整个字符数组进行计数，直到遇到空字符串结尾为止，而SDS结构中的len属性记录了长度信息，字符串长度可以直接进行获取。</p>
+</li>
+<li><p>不会造成缓冲区溢出</p>
+<p>字符数组的另一个问题则是，如果没有为该字符数组分配足够的空间，直接在数组末尾拼接字符串的话，可能会造成缓冲区溢出的错误。而SDS的空间分配策略会对分配空间进行检查，如果空间不足则会直接进行扩展。</p>
+</li>
+<li><p>二进制安全</p>
+<p>字符数组以空字符串结尾，这导致了C语言字符串不能直接保存音频数据，否则第一个被读到的空字符串就将直接被认为是字符串的结尾。而SDS的API都会以处理二进制的方式来处理字符数组中的数据。</p>
+</li>
+<li><p>减少内存重分配</p>
+<p>字符数组的空间总是预先分配好的，每次对字符串的增加或减少，都会对这个数组的空间大小进行一次扩展或是释放的操作。在SDS中，字符数组可以预先分配空间，由len字段记录已经使用的空间，由free字段记录未使用的空间。SDS由此实现了空间预分配和惰性空间释放的策略。</p>
+<p><strong>空间预分配</strong></p>
+<p>对SDS进行修改时，如果需要进行空间扩展，除了分配所需的空间，还会对SDS分配额外不使用的空间，由此策略减少了对字符串进行连续增长操作时所需的内存重分配次数。</p>
+<p><strong>惰性空间释放</strong></p>
+<p>当SDS需要缩短字符串长度时，程序不会立刻将这些内存进行回收，而是使用free字段将字节数量记录以便后续使用，且SDS的API也可以直接释放该属性中的未使用空间。</p>
+</li>
+</ol>
+<h2 id="SDS与字符数组对比"><a href="#SDS与字符数组对比" class="headerlink" title="SDS与字符数组对比"></a>SDS与字符数组对比</h2><table>
+<thead>
+<tr>
+<th style="text-align:left">C 字符串</th>
+<th style="text-align:left">SDS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">获取字符串长度的复杂度为 O(N) 。</td>
+<td style="text-align:left">获取字符串长度的复杂度为 O(1) 。</td>
+</tr>
+<tr>
+<td style="text-align:left">API 是不安全的，可能会造成缓冲区溢出。</td>
+<td style="text-align:left">API 是安全的，不会造成缓冲区溢出。</td>
+</tr>
+<tr>
+<td style="text-align:left">修改字符串长度N次必然需要执行N次内存重分配。</td>
+<td style="text-align:left">修改字符串长度N次最多需要执行N次内存重分配。</td>
+</tr>
+<tr>
+<td style="text-align:left">只能保存文本数据。</td>
+<td style="text-align:left">可以保存文本或者二进制数据。</td>
+</tr>
+<tr>
+<td style="text-align:left">可以使用所有 <code>&lt;string.h&gt;</code> 库中的函数。</td>
+<td style="text-align:left">可以使用一部分 <code>&lt;string.h&gt;</code> 库中的函数。</td>
+</tr>
+</tbody>
+</table>
+<h1 id="列表"><a href="#列表" class="headerlink" title="列表"></a>列表</h1><p>列表类型存储了一个有序的字符串列表，可以用来充当队列或是栈，关于列表的操作命令可以查看<a href="http://doc.redisfans.com/list/index.html" target="_blank" rel="noopener">Redis命令参考</a>。</p>
+<p>Redis 中的列表使用 quicklist 结构来存储， quicklist 存储了一个双向链表，其中的每个节点结构是 ziplist。</p>
+<p>quicklist 的结构如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">quicklist</span> &#123;</span> </span><br><span class="line">    quicklistNode *head; <span class="comment">/* 链表头指针 */</span> </span><br><span class="line">	quicklistNode *tail; <span class="comment">/* 链表尾指针 */</span> </span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> count; <span class="comment">/* 所有的 ziplist 存储的元素数量 */</span> </span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> len; <span class="comment">/* 节点数量,也就是链表的长度 */</span> </span><br><span class="line">	<span class="keyword">int</span> fill : <span class="number">16</span>;</span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">int</span> compress : <span class="number">16</span>; </span><br><span class="line">&#125; quicklist;</span><br></pre></td></tr></table></figure>
+<p>quicklistNode 的结构如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">quicklistNode</span> &#123;</span> </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">quicklistNode</span> *<span class="title">prev</span>;</span> <span class="comment">/* 上一个节点 */</span> </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">quicklistNode</span> *<span class="title">next</span>;</span> <span class="comment">/* 下一个节点 */</span> </span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">char</span> *zl; <span class="comment">/* 指向 ziplist */</span> </span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> sz; <span class="comment">/* ziplist 占用了多少字节 */</span> </span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> count : <span class="number">16</span>; </span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> encoding : <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> container : <span class="number">2</span>; </span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> recompress : <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> attempted_compress : <span class="number">1</span>; </span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> extra : <span class="number">10</span>;</span><br><span class="line">&#125; quicklistNode;</span><br></pre></td></tr></table></figure>
+<p>quicklistNode 中实际存储的数据是指向了一个 ziplist 结构，列表的存储结构如下图所示：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/redis/quicklist.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<h2 id="ziplist"><a href="#ziplist" class="headerlink" title="ziplist"></a>ziplist</h2><blockquote>
+<p>ziplist.c 的文件头部注释中，对ziplist的做出如下解释：</p>
+<p>The ziplist is a specially encoded dually linked list that is designed to be very memory efficient. It stores both strings and integer values, where integers are encoded as actual integers instead of a series of characters. It allows push and pop operations on either side of the list in O(1) time. </p>
+</blockquote>
+<p>ziplist 是一个双向链表 ，但 ziplist 为了提高存储效率，是存储在连续的内存空间中的；并且对于值的存储，不同长度的值需要存储的字节数也不同，也就是说，对于大一些的值，就多用一些字节来存储，而对于小一些的值，则就可以少用一些字节来存储；ziplist 中的每个节点通过存储上一个节点的长度和当前节点的长度来实现这种功能。</p>
+<p>一个 ziplist 可以包含任意数量的节点 (entry)，每个节点都可以保存一个字节数组或整数值。ziplist 的各个组成部分如下：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">zlbytes</span>&gt;</span> <span class="tag">&lt;<span class="name">zltail</span>&gt;</span> <span class="tag">&lt;<span class="name">zllen</span>&gt;</span> <span class="tag">&lt;<span class="name">entry</span>&gt;</span> <span class="tag">&lt;<span class="name">entry</span>&gt;</span> ... <span class="tag">&lt;<span class="name">entry</span>&gt;</span> <span class="tag">&lt;<span class="name">zlend</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">属性</th>
+<th style="text-align:left">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">zlbytes</td>
+<td style="text-align:left">记录 ziplist 总使用的内存字节数。</td>
+</tr>
+<tr>
+<td style="text-align:left">zltail</td>
+<td style="text-align:left">记录 ziplist 表尾节点距离 ziplist 的起始地址有多少字节，这使得不需要遍历整个 ziplist 就可以确定表尾节点的地址。</td>
+</tr>
+<tr>
+<td style="text-align:left">zllen</td>
+<td style="text-align:left">记录 ziplist 的节点数量， 当这个值等于 UINT16_MAX (65535) 时， 节点的真实数量需要遍历整个ziplist 才能得出。</td>
+</tr>
+<tr>
+<td style="text-align:left">entry</td>
+<td style="text-align:left">ziplist 的节点，节点的长度由节点保存的内容决定。</td>
+</tr>
+<tr>
+<td style="text-align:left">zlend</td>
+<td style="text-align:left">特殊值 0xFF（十进制 255 ），用于标记 ziplist 的末端。</td>
+</tr>
+</tbody>
+</table>
+<h1 id="哈希"><a href="#哈希" class="headerlink" title="哈希"></a>哈希</h1><p>哈希类型存储了无序的散列表，每个字段可以有一个对应的值，但其值只能是字符串类型，存储内容如下：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/redis/hash.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>哈希可以使用两种数据结构来实现，分别是 <code>ziplist</code> 和 <code>hashtable</code>。</p>
+<h2 id="ziplist-1"><a href="#ziplist-1" class="headerlink" title="ziplist"></a>ziplist</h2><p>ziplist 在上面存储列表类型时已经有所介绍，但 ziplist 也可以用来作为哈希类型的实现，当有新的键值对加入哈希对象中时，先将键的 ziplist 节点推入到 ziplist 的表尾，然后再将值的 ziplist 节点推入到 ziplist 表尾。</p>
+<p>也就是说同一个键值对的两个 ziplist 节点肯定是紧挨在一起的两个节点，键节点在前，值节点在后；且键值对会按照添加顺序依次排在上一个键值对的后面。</p>
+<p>只有当哈希对象满足以下两个条件时，哈希对象才会使用 ziplist 编码：</p>
+<ol>
+<li>哈希对象保存的所有键值对的键和值的字符串长度都小于64字节；</li>
+<li>哈希对象保存的键值对数量小于512 个；</li>
+</ol>
+<p>不满足这两个条件时，哈希对象使用 hashtable 编码存储，这两个条件的上限可以通过 redis 的配置文件更改。</p>
+<h2 id="hashtable"><a href="#hashtable" class="headerlink" title="hashtable"></a>hashtable</h2><p>hashtable 是作为字典保存键值对的数据结构；在字典中，每一个键都可以和一个值进行关联，这些关联的键和值就被成为键值对。</p>
+<p>字典中的每个键都是不允许重复的，我们可以根据键来查找与之对应的值进行更新或删除等相关操作。</p>
+<p>哈希表的结构如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">dictht</span> &#123;</span></span><br><span class="line">    dictEntry **table; <span class="comment">/* 哈希表数组 */</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> size; <span class="comment">/* 哈希表大小 */</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> sizemask; <span class="comment">/* 掩码大小，用于计算索引值。总是等于 size-1 */</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> used; <span class="comment">/* 已有节点数量 */</span></span><br><span class="line">&#125; dictht;</span><br></pre></td></tr></table></figure>
+<p>哈希表节点 dictEntry 结构如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">dictEntry</span> &#123;</span> </span><br><span class="line">    <span class="keyword">void</span> *key; <span class="comment">/* 键 */</span> </span><br><span class="line">    <span class="keyword">union</span> &#123;  </span><br><span class="line">        <span class="keyword">void</span> *val; </span><br><span class="line">        <span class="keyword">uint64_t</span> u64; </span><br><span class="line">        <span class="keyword">int64_t</span> s64; </span><br><span class="line">        <span class="keyword">double</span> d; </span><br><span class="line">    &#125; v; <span class="comment">/* 值 */</span> </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">dictEntry</span> *<span class="title">next</span>;</span> <span class="comment">/* 指向下一个节点 */</span> </span><br><span class="line">&#125; dictEntry;</span><br></pre></td></tr></table></figure>
+<p>当发生哈希键冲突时，多个键值对会形成链表，新节点会被添加到表头，然后将 next 指针指向原表头。</p>
+<p>字典结构如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">dict</span> &#123;</span> </span><br><span class="line">    dictType *type; <span class="comment">/* 类型 */</span> </span><br><span class="line">    <span class="keyword">void</span> *privdata; <span class="comment">/* 私有数据 */</span> </span><br><span class="line">    dictht ht[<span class="number">2</span>]; <span class="comment">/* 哈希表 */</span> </span><br><span class="line">    <span class="keyword">long</span> rehashidx; <span class="comment">/* rehash 索引,rehash 不在进行时，值为 -1 */</span> </span><br><span class="line">&#125; dict;</span><br></pre></td></tr></table></figure>
+<p>在字典结构中，ht 属性是一个长度为2的数组，其包含了两个哈希表，一般情况下字典只会使用 ht[0] 作为哈希表使用，而 ht[1] 的哈希表只会在对 ht[0] 的哈希表进行 rehash 时使用。</p>
+<p>rehashidx 属性记录了 rehash 的进度， 如果当前没有进行 rehash ， 那么它的值为 -1 。</p>
+<p>也就是说，字典的总体结构如下图所示：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/redis/hashtable.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<h3 id="rehash"><a href="#rehash" class="headerlink" title="rehash"></a>rehash</h3><p>随着哈希表中保存的键值对逐渐的增多或减少，为了让哈希表的负载因子维持在一个合理的范围内，需要对哈希表进行扩展或收缩；这个过程通过 rehash 完成，rehash的大致步骤如下：</p>
+<ol>
+<li>为字典的 ht[1] 上的哈希表分配空间，空间的大小是2的n次方 。</li>
+<li>将 ht[0] 中的所有键值对 rehash 到 ht[1] 上， rehash 指重新计算键的哈希值和索引值， 然后将键值对放置到 ht[1] 上的哈希表指定位置上。</li>
+<li>当 ht[0] 的所有键值对迁移到 ht[1] 之后，释放 ht[0] ， 将 ht[1] 设置为 ht[0] ， 并在 ht[1] 新创建一个空白哈希表。</li>
+</ol>
+<p>rehash 是分多次进行的，这是为了避免对服务器的性能造成过大的影响，所以 rehash 的详细步骤如下：</p>
+<ol>
+<li>为字典的 ht[1] 上的哈希表分配空间，空间的大小是2的n次方；此时字典还是持有 ht[0] 上的哈希表 。</li>
+<li>将索引计数器变量 rehashidx 的值设置为 0 ，表示 rehash 工作开始。</li>
+<li>在 rehash 期间， 每次对字典执行增删改查操作时， 会顺带将 ht[0] 哈希表在 rehashidx 索引上的所有键值对 rehash 到 ht[1] ， 当 rehash 工作完成之后， 将 rehashidx 属性的值加一。</li>
+<li>随着字典操作的不断执行，ht[0] 上的所有键值对都会被 rehash 至 ht[1] ，最终将 rehashidx 属性的值设为 -1 ， 表示 rehash 操作完成。</li>
+</ol>
+<p>这种操作将 rehash 所需要的计算工作量分摊到了每次对字典的增删改查操作中，避免了集中式 rehash 带来的庞大计算量从而影响服务器的性能；在 rehash 过程中，字典会同时使用 ht[0] 和 ht[1] 两个哈希表，新添加的键值对只会被保存到 ht[1] 中，查找键的过程则会同时查找两个哈希表。</p>
+<h1 id="集合"><a href="#集合" class="headerlink" title="集合"></a>集合</h1><p>集合类型中的元素为 String 类型的字符串，且在集合中不包含重复项；当集合中的元素类型都是整数时，集合类型使用 <code>intset</code> 编码的整数集合来存储元素，否则使用 <code>hashtable</code> 编码的字典来存储元素。</p>
+<h2 id="hashtable-1"><a href="#hashtable-1" class="headerlink" title="hashtable"></a>hashtable</h2><p>使用字典类型来存储集合元素时，字典中的每个键都是一个集合元素，而字典的值被设置为NULL。</p>
+<p>当集合对象满足以下两个条件时，集合对象会使用 intset 编码：</p>
+<ol>
+<li>集合对象中保存的所有元素都是整数值；</li>
+<li>集合对象中保存的元素数量没有超过 512 个；</li>
+</ol>
+<p>没有满足这两个条件的集合对象则使用 hashtable 编码，并且在使用 intset 编码时，有任意一个条件不能满足时，则会执行对象的编码转换操作，将 intset 编码转换为 hashtable 编码 。这两个条件的上限可以通过配置文件更改。</p>
+<h2 id="intset"><a href="#intset" class="headerlink" title="intset"></a>intset</h2><p>整数集合作为集合中只保存了整数且元素数量不多时的实现，结构如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">intset</span> &#123;</span></span><br><span class="line">    <span class="keyword">uint32_t</span> encoding; <span class="comment">/* 编码方式 */</span> </span><br><span class="line">    <span class="keyword">uint32_t</span> length; <span class="comment">/* 元素数量 */</span> </span><br><span class="line">    <span class="keyword">int8_t</span> contents[]; <span class="comment">/* 元素数组 */</span> </span><br><span class="line">&#125; intset;</span><br></pre></td></tr></table></figure>
+<p>整数集合的元素实际就存储在了 contents 数组中。</p>
+<h1 id="有序集合"><a href="#有序集合" class="headerlink" title="有序集合"></a>有序集合</h1><p>有序的集合对象，集合中的元素都有 score 属性作为排序依据，有序集合的编码为 <code>ziplist</code> 或<code>skiplist</code>。</p>
+<h2 id="ziplist-2"><a href="#ziplist-2" class="headerlink" title="ziplist"></a>ziplist</h2><p>使用 ziplist 作为有序集合的实现时，每个集合元素使用两个紧挨的 ziplist 节点保存，第一个节点保存元素信息，第二个节点则保存元素的 score。</p>
+<p>在 ziplist 中，根据元素的 score 进行排序，score 越小的节点，则越靠近表头，当有更小的节点插入时，需要移动节点。</p>
+<p>只有当有序集合对象满足以下两个条件时，有序集合对象才会使用 ziplist 编码：</p>
+<ol>
+<li>有序集合保存的所有元素的长度都小于 64 字节；</li>
+<li>有序集合对象保存的元素数量小于 128 个；</li>
+</ol>
+<p>不满足这两个条件时，哈希对象使用 skiplist 编码存储，这两个条件的上限可以通过配置文件更改。</p>
+<h2 id="skiplist"><a href="#skiplist" class="headerlink" title="skiplist"></a>skiplist</h2><p>skiplist 编码的有序集合对象使用 zset 结构作为底层实现， 一个 zset 结构同时包含一个字典和一个跳跃表：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">zset</span> &#123;</span></span><br><span class="line">    zskiplist *zsl; <span class="comment">/* 跳跃表 */</span> </span><br><span class="line">    dict *dict; <span class="comment">/* 字典 */</span> </span><br><span class="line">&#125; zset;</span><br></pre></td></tr></table></figure>
+<p>跳跃表是一种支持平均 O(log N) 最坏 O(N) 复杂度的节点查找的有序数据结构，且在大部分情况下跳跃表的性能可以和平衡树相比较。</p>
+<p>在 redis 中，跳跃表的结构由 zskiplistNode 和 zskiplist 组成，其组成如下图：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/redis/zskiplist.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>zskiplist 的结构如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">zskiplist</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">zskiplistNode</span> *<span class="title">header</span>, *<span class="title">tail</span>;</span> <span class="comment">/* 表头和表尾节点 */</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> length; <span class="comment">/* 节点数量 */</span></span><br><span class="line">    <span class="keyword">int</span> level; <span class="comment">/* 最大层数 */</span></span><br><span class="line">&#125; zskiplist;</span><br></pre></td></tr></table></figure>
+<p>zskiplistNode 的结构如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">zskiplistNode</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">zskiplistNode</span> *<span class="title">backward</span>;</span> <span class="comment">/* 后退指针 */</span></span><br><span class="line">    <span class="keyword">double</span> score; <span class="comment">/* 分值 */</span></span><br><span class="line">    robj *obj; <span class="comment">/* 元素 */</span></span><br><span class="line">    </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">zskiplistLevel</span> &#123;</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">zskiplistNode</span> *<span class="title">forward</span>;</span> <span class="comment">/* 前进指针*/</span></span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">int</span> span; <span class="comment">/* 跨越的节点数 */</span></span><br><span class="line">    &#125; level[]; <span class="comment">/* 层 */</span></span><br><span class="line">&#125; zskiplistNode;</span><br></pre></td></tr></table></figure>
+<p>除了跳跃表，zset 中的字典结构还保存了每个元素对应 score 的映射；通过字典，在查找元素对应的 score 时就可以直接从字典中返回，虽然元素同时在跳跃表和字典中同时保存，但这两种数据结构通过指针共享了相同元素的对象，因此并不会浪费额外的内存。</p>
+
+        </div>
+
+        <blockquote class="post-copyright">
+    
+    <div class="content">
+        
+
+        
+        以上便是本篇博客的所有内容，感谢阅读，如有疑惑可以留下你的评论，谢谢！<br> 本篇文章地址：<a href="/redis/redis-base.html" target="_blank" rel="external">https://jinjinz.top/redis/redis-base.html</a>
+        
+    </div>
+    
+    <footer>
+        <a href="https://jinjinz.top">
+            <img src="/img/avatar.png" alt="Jin Jin">
+            Jin Jin
+        </a>
+    </footer>
+</blockquote>
+
+        
+<div class="page-reward">
+    <a id="rewardBtn" href="javascript:;" class="page-reward-btn waves-effect waves-circle waves-light">赏</a>
+</div>
+
+
+
+        <div class="post-footer">
+            
+	<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redis/">Redis</a></li></ul>
+
+
+            
+<div class="page-share-wrap">
+    
+
+<div class="page-share" id="pageShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=https://jinjinz.top/redis/redis-base.html&title=《深入理解Redis的基础数据结构》 — JinJin's Blog&pic=https://jinjinz.top/img/avatar.png" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=https://jinjinz.top/redis/redis-base.html&title=《深入理解Redis的基础数据结构》 — JinJin's Blog&source=分享Java相关技术,MySQL-锁-MVCC,设计模式,Spring源码分析" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=https://jinjinz.top/redis/redis-base.html" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《深入理解Redis的基础数据结构》 — JinJin's Blog&url=https://jinjinz.top/redis/redis-base.html&via=https://jinjinz.top" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=https://jinjinz.top/redis/redis-base.html" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+
+    <a href="javascript:;" id="shareFab" class="page-share-fab waves-effect waves-circle">
+        <i class="icon icon-share-alt icon-lg"></i>
+    </a>
+</div>
+
+
+
+        </div>
+    </div>
+
+    
+<nav class="post-nav flex-row flex-justify-between flex-row-reverse">
+  
+
+  
+    <div class="waves-block waves-effect next">
+      <a href="/concurrent/optimal.html" id="post-next" class="post-nav-link">
+        <div class="tips">Next <i class="icon icon-angle-right icon-lg icon-pl"></i></div>
+        <h4 class="title">并发编程的最佳实践</h4>
+      </a>
+    </div>
+  
+</nav>
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<section class="comments" id="comments">
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+        var id = location.pathname
+        if (location.pathname.length > 50) {
+          id = location.pathname.replace(/\/\d+\/\d+\/\d+\//, '').replace('/', '').substring(0, 50)
+        }
+        const gitalk = new Gitalk({
+          clientID: '217672eb040280538293',
+          clientSecret: '5a950867142dbcfd9fdc3de4491455bd3651c1a8',
+          repo: 'jinzzzzz.github.io',
+          owner: 'jinzzzzz',
+          admin: ['jinzzzzz'],
+          id: id,      // Ensure uniqueness and length less than 50
+          title: document.title.split('|')[0],
+          distractionFreeMode: false  // Facebook-like distraction free mode
+        })
+
+        gitalk.render('gitalk-container')
+    </script>
+</section>
+
+
+
+
+</article>
+
+<div id="reward" class="page-modal reward-lay">
+    <a class="close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <h3 class="reward-title">
+        <i class="icon icon-quote-left"></i>
+        谢谢大爷~
+        <i class="icon icon-quote-right"></i>
+    </h3>
+    <div class="reward-content">
+        
+        <div class="reward-code">
+            <img id="rewardCode" src="/img/alipay.png" alt="打赏二维码">
+        </div>
+        
+    </div>
+</div>
+
+
+
+</div>
+
+        <footer class="footer">
+    <div class="top">
+        
+<p>
+    <span id="busuanzi_container_site_uv" style="display:none">
+        站点总访客数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span id="busuanzi_container_site_pv" style="display:none">
+        站点总访问量：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</p>
+
+
+        <p>
+            
+                <span><a href="/atom.xml" target="_blank" class="rss" title="rss"><i class="icon icon-lg icon-rss"></i></a></span>
+            
+            <span>博客内容遵循 <a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh">知识共享 署名 - 非商业性 - 相同方式共享 4.0 国际协议</a></span>
+        </p>
+    </div>
+    <div class="bottom">
+        <p><span>Jin Jin &copy; 2019</span>
+            <span>
+                
+                Power by <a href="http://hexo.io/" target="_blank">Hexo</a> Theme <a href="https://github.com/yscoder/hexo-theme-indigo" target="_blank">indigo</a>
+            </span>
+        </p>
+    </div>
+</footer>
+
+    </main>
+    <div class="mask" id="mask"></div>
+<a href="javascript:;" id="gotop" class="waves-effect waves-circle waves-light"><span class="icon icon-lg icon-chevron-up"></span></a>
+
+
+
+<div class="global-share" id="globalShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=https://jinjinz.top/redis/redis-base.html&title=《深入理解Redis的基础数据结构》 — JinJin's Blog&pic=https://jinjinz.top/img/avatar.png" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=https://jinjinz.top/redis/redis-base.html&title=《深入理解Redis的基础数据结构》 — JinJin's Blog&source=分享Java相关技术,MySQL-锁-MVCC,设计模式,Spring源码分析" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=https://jinjinz.top/redis/redis-base.html" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《深入理解Redis的基础数据结构》 — JinJin's Blog&url=https://jinjinz.top/redis/redis-base.html&via=https://jinjinz.top" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=https://jinjinz.top/redis/redis-base.html" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+<div class="page-modal wx-share" id="wxShare">
+    <a class="close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAK4AAACuCAAAAACKZ2kyAAABy0lEQVR42u3aS47CMBAFwNz/0pktUjTOaztuglReITBOwaLVHx9HvM6P9fnOeOf1W9edx46Fi4u7zD2Hq4pIzr9yEwMuLm4/dxxornvGD0vOycMiLi7u+7nVEJaEQlxc3F/n5sVP9cfg4uK+jZsHmjNY1WRoS62Gi4u7wJ1LVp59vaW/i4uLO8U9i2ucfOQnnFMLFxe3h5sHlLyR8ewJuLi4/dxxkBoHoGoatD6UxcXF7eeOj0s+rTZJy+kRLi5uI3ecgswVM/m1jLxFi4uL+y3uU6XOSti6KX5wcXE3c/OAkh/3bMJUmAnj4uJu4M4NQcf7k4Qpb9Dg4uL2c/PgtYJLzrxJsHBxcdu5K2OPJMzloW2y+MHFxX2UWx1sJMEoSV+qaRMuLm4/t9qwWCmW8oIqqtVwcXG3cefGq3MBa/KPwMXFbeRWByp5E6Q6pr3ZiYuLu5l7FlfSEJkLfNGPwcXFbeFWr1hVr1nkqU/eZMHFxe3hriQo1cIpH6n++11cXNxGbnmkUUxTqoGv/DEuLu5ruPk1i/wSxmTXBBcX96vcaiG00jyNJj+4uLjbuCujlMLliYXwh4uL28ldn9MmKcv48cnfhIuL28L9A2cOKfhpZ0TyAAAAAElFTkSuQmCC" alt="微信分享二维码">
+</div>
+
+
+
+
+    <script src="//cdn.bootcss.com/node-waves/0.7.4/waves.min.js"></script>
+<script>
+var BLOG = { ROOT: '/', SHARE: true, REWARD: true };
+
+
+</script>
+
+<script src="/js/main.min.js?v=1.7.2"></script>
+
+
+<div class="search-panel" id="search-panel">
+    <ul class="search-result" id="search-result"></ul>
+</div>
+<template id="search-tpl">
+<li class="item">
+    <a href="{path}" class="waves-block waves-effect">
+        <div class="title ellipsis" title="{title}">{title}</div>
+        <div class="flex-row flex-middle">
+            <div class="tags ellipsis">
+                {tags}
+            </div>
+            <time class="flex-col time">{date}</time>
+        </div>
+    </a>
+</li>
+</template>
+
+<script src="/js/search.min.js?v=1.7.2" async></script>
+
+
+
+
+
+
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+</body>
+</html>

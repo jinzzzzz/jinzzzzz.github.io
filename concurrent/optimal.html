@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html>
+<head><meta name="generator" content="Hexo 3.8.0">
+    
+
+    
+
+    
+
+
+
+    <meta charset="utf-8">
+    
+    
+    
+    <link rel="canonical" href="true/concurrent/optimal.html">
+    
+    
+    <title>并发编程的最佳实践 | JinJin&#39;s Blog | 欲渡黄河冰塞川，将登太行雪满山</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    
+    <meta name="theme-color" content="#3F51B5">
+    
+    
+    <meta name="keywords" content="并发">
+    <meta name="description" content="前言 并发编程是目的其实就是为了提高我们程序的性能，但是在日常的工作过程中，大部分开发人员可能没有机会去接触并发编程，而在并发编程中忽略的一些细节可能就会引发问题的产生，以下仅介绍我个人在并发编程中的经验及理解，希望能对你带来一些帮助。 JUC大神Doug Lea在JDK1.5中提供了Java并发包(JUC)，在java.util.concurrent这个包下提供了并发相关的工具类，例如锁、线程同">
+<meta name="keywords" content="并发">
+<meta property="og:type" content="article">
+<meta property="og:title" content="并发编程的最佳实践">
+<meta property="og:url" content="https://jinjinz.top/concurrent/optimal.html">
+<meta property="og:site_name" content="JinJin&#39;s Blog">
+<meta property="og:description" content="前言 并发编程是目的其实就是为了提高我们程序的性能，但是在日常的工作过程中，大部分开发人员可能没有机会去接触并发编程，而在并发编程中忽略的一些细节可能就会引发问题的产生，以下仅介绍我个人在并发编程中的经验及理解，希望能对你带来一些帮助。 JUC大神Doug Lea在JDK1.5中提供了Java并发包(JUC)，在java.util.concurrent这个包下提供了并发相关的工具类，例如锁、线程同">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/concurrent/ThreadLocal.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/concurrent/ThreadLocalMap.png">
+<meta property="og:updated_time" content="2019-09-04T03:29:54.938Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="并发编程的最佳实践">
+<meta name="twitter:description" content="前言 并发编程是目的其实就是为了提高我们程序的性能，但是在日常的工作过程中，大部分开发人员可能没有机会去接触并发编程，而在并发编程中忽略的一些细节可能就会引发问题的产生，以下仅介绍我个人在并发编程中的经验及理解，希望能对你带来一些帮助。 JUC大神Doug Lea在JDK1.5中提供了Java并发包(JUC)，在java.util.concurrent这个包下提供了并发相关的工具类，例如锁、线程同">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/concurrent/ThreadLocal.png">
+    
+        <link rel="alternate" type="application/atom+xml" title="JinJin&#39;s Blog" href="/atom.xml">
+    
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/css/style.css?v=1.7.2">
+    <script>window.lazyScripts=[]</script>
+
+    <!-- custom head -->
+    
+
+</head>
+
+<body>
+    <div id="loading" class="active"></div>
+
+    <aside id="menu" class="hide">
+  <div class="inner flex-row-vertical">
+    <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menu-off">
+        <i class="icon icon-lg icon-close"></i>
+    </a>
+    <div class="brand-wrap" style="background-image:url(/img/brand.jpg)">
+      <div class="brand">
+        <a href="/" class="avatar waves-effect waves-circle waves-light">
+          <img src="/img/avatar.png">
+        </a>
+        <hgroup class="introduce">
+          <h5 class="nickname">Jin Jin</h5>
+          <a href="mailto:jinmailon@gmail.com" title="jinmailon@gmail.com" class="mail">jinmailon@gmail.com</a>
+        </hgroup>
+      </div>
+    </div>
+    <div class="scroll-wrap flex-col">
+      <ul class="nav">
+        
+            <li class="waves-block waves-effect">
+              <a href="/">
+                <i class="icon icon-lg icon-home"></i>
+                home
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/archives">
+                <i class="icon icon-lg icon-archives"></i>
+                Archives
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/tags">
+                <i class="icon icon-lg icon-tags"></i>
+                Tags
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="https://github.com/jinzzzzz" target="_blank">
+                <i class="icon icon-lg icon-github"></i>
+                Github
+              </a>
+            </li>
+        
+      </ul>
+    </div>
+  </div>
+</aside>
+
+    <main id="main">
+        <header class="top-header" id="header">
+    <div class="flex-row">
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light on" id="menu-toggle">
+          <i class="icon icon-lg icon-navicon"></i>
+        </a>
+        <div class="flex-col header-title ellipsis">并发编程的最佳实践</div>
+        
+        <div class="search-wrap" id="search-wrap">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="back">
+                <i class="icon icon-lg icon-chevron-left"></i>
+            </a>
+            <input type="text" id="key" class="search-input" autocomplete="off" placeholder="输入感兴趣的关键字">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="search">
+                <i class="icon icon-lg icon-search"></i>
+            </a>
+        </div>
+        
+        
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menuShare">
+            <i class="icon icon-lg icon-share-alt"></i>
+        </a>
+        
+    </div>
+</header>
+<header class="content-header post-header">
+
+    <div class="container fade-scale">
+        <h1 class="title">并发编程的最佳实践</h1>
+        <h5 class="subtitle">
+            
+                <time datetime="2019-09-04T02:55:30.000Z" itemprop="datePublished" class="page-time">
+  2019-09-04
+</time>
+
+
+	<ul class="article-category-list"><li class="article-category-list-item"><a class="article-category-list-link" href="/categories/concurrent/">concurrent</a></li></ul>
+
+            
+        </h5>
+    </div>
+
+    
+
+
+</header>
+
+
+<div class="container body-wrap">
+    
+    <aside class="post-widget">
+        <nav class="post-toc-wrap post-toc-shrink" id="post-toc">
+            <h4>目录</h4>
+            <ol class="post-toc"><li class="post-toc-item post-toc-level-1"><a class="post-toc-link" href="#JUC"><span class="post-toc-text">JUC</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#线程池"><span class="post-toc-text">线程池</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#并发Map"><span class="post-toc-text">并发Map</span></a></li></ol></li><li class="post-toc-item post-toc-level-1"><a class="post-toc-link" href="#SimpleDateFormat"><span class="post-toc-text">SimpleDateFormat</span></a></li><li class="post-toc-item post-toc-level-1"><a class="post-toc-link" href="#ThreadLocal"><span class="post-toc-text">ThreadLocal</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#谨防内存泄漏"><span class="post-toc-text">谨防内存泄漏</span></a></li></ol></li></ol>
+        </nav>
+    </aside>
+
+
+<article id="post-optimal" class="post-article article-type-post fade" itemprop="blogPost">
+
+    <div class="post-card">
+        <h1 class="post-card-title">并发编程的最佳实践</h1>
+        <div class="post-meta">
+            <time class="post-time" title="2019-09-04 10:55:30" datetime="2019-09-04T02:55:30.000Z" itemprop="datePublished">2019-09-04</time>
+
+            
+
+
+            
+<span id="busuanzi_container_page_pv" title="文章总阅读量" style="display:none">
+    <i class="icon icon-eye icon-pr"></i><span id="busuanzi_value_page_pv"></span>
+</span>
+
+
+        </div>
+        <div class="post-content" id="post-content" itemprop="postContent">
+            <p><strong>前言</strong></p>
+<p>并发编程是目的其实就是为了提高我们程序的性能，但是在日常的工作过程中，大部分开发人员可能没有机会去接触并发编程，而在并发编程中忽略的一些细节可能就会引发问题的产生，以下仅介绍我个人在并发编程中的经验及理解，希望能对你带来一些帮助。</p>
+<h1 id="JUC"><a href="#JUC" class="headerlink" title="JUC"></a>JUC</h1><p>大神Doug Lea在JDK1.5中提供了Java并发包(JUC)，在java.util.concurrent这个包下提供了并发相关的工具类，例如锁、线程同步队列、线程池等等，但是如果你对其的原理不了解或者没有并发编程的相关经验，就很容易犯错。</p>
+<h2 id="线程池"><a href="#线程池" class="headerlink" title="线程池"></a>线程池</h2><p>使用线程池时，我们应该明确线程池中的基本参数，了解其作用，这样才能更准确、有效的使用线程池，在《阿里巴巴Java开发手册》中对于线程池的创建说明如下：</p>
+<blockquote>
+<p>线程池不允许使用 Executors 去创建，而是通过 ThreadPoolExecutor 的方式，这样的处理方式让写的同学更加明确线程池的运行规则，规避资源耗尽的风险。</p>
+<p>说明：Executors 返回的线程池对象的弊端如下：</p>
+<p>1）FixedThreadPool 和 SingleThreadPool:</p>
+<p>​    允许的请求队列长度为 Integer.MAX_VALUE，可能会堆积大量的请求，从而导致 OOM。</p>
+<p>2）CachedThreadPool 和 ScheduledThreadPool:</p>
+<p>​    允许的创建线程数量为 Integer.MAX_VALUE，可能会创建大量的线程，从而导致 OOM。</p>
+</blockquote>
+<p>所以在创建线程池时，需要明确该线程池的使用目的，有以下要点需要注意</p>
+<ul>
+<li>使用无界队列和设置队列大小时需要谨慎，避免OOM；</li>
+<li>线程数量和超时时间也需要明确分配，避免造成资源的浪费；</li>
+<li>对于线程池的使用，最好不要轻易的共用线程池，对于CPU密集型任务和IO密集型任务需要进行区分；</li>
+<li>最好重写线程工厂创建线程的newThread()方法定义线程名称，方便问题的排查；</li>
+<li>最好在饱和策略中进行日志输出，了解在什么时候进行了饱和策略及线程池当前的状态；</li>
+<li>捕获线程执行时的run()方法非受检异常，或者设置UncaughtExceptionHandler回调处理；</li>
+</ul>
+<p>创建线程池时，务必重写ThreadFactory的newThread()方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Thread <span class="title">newThread</span><span class="params">(Runnable r)</span> </span>&#123;</span><br><span class="line">    <span class="comment">//设置线程名称</span></span><br><span class="line">    Thread thread = <span class="keyword">new</span> Thread(r,prefix + <span class="string">"-"</span> + thisPoolCount + <span class="string">"-"</span> </span><br><span class="line">                               + name + <span class="string">"-"</span> + count.incrementAndGet());</span><br><span class="line">    <span class="comment">//是否为守护线程</span></span><br><span class="line">    thread.setDaemon(isDaemon);</span><br><span class="line">    <span class="comment">//设置优先级</span></span><br><span class="line">    thread.setPriority(priority);</span><br><span class="line">    <span class="comment">//设置异常处理器</span></span><br><span class="line">    thread.setUncaughtExceptionHandler(uncaughtExceptionHandler);</span><br><span class="line">    <span class="keyword">return</span> thread;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>设置线程的名称及是否为守护线程、优先级等属性，以及设置线程的异常处理器；如果线程中没有自己捕获非受检异常，当这个异常发生时，如果设置了异常处理器，那么我们可以通过UncaughtExceptionHandle的回调方法来处理该异常。</p>
+<p>尤其是设置线程名称这一点尤为重要，如果项目中使用了多个线程池，在线程抛出异常或使用jstack命令查看堆栈信息时，看到的线程池中的线程名称都是<code>pool-x-thread-x</code>，这样不利于快速排查出现问题的所在线程，所以在创建线程池时，应该将线程的名称设置为与业务相关。</p>
+<p>重写RejectedExecutionHandler的rejectedExecution()方法，在饱和策略中打印相关信息，以便排查问题：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">rejectedExecution</span><span class="params">(Runnable r, ThreadPoolExecutor executor)</span> </span>&#123;</span><br><span class="line">    <span class="comment">//饱和策略打印相关信息</span></span><br><span class="line">    log.warn(<span class="string">"线程"</span> + r + <span class="string">"执行饱和策略,当前线程池大小:"</span> + executor.getPoolSize() +</span><br><span class="line">             <span class="string">",当前活跃线程数:"</span>+executor.getActiveCount() + <span class="string">",当前队列任务数:"</span> +</span><br><span class="line">             executor.getQueue().size() + <span class="string">",任务数:"</span>+executor.getTaskCount());</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> RejectedExecutionException(<span class="string">"线程池已满,执行饱和策略"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>重写ThreadPoolExecutor的beforeExecute()和afterExecute()方法，记录任务执行时间：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">beforeExecute</span><span class="params">(Thread t, Runnable r)</span> </span>&#123;</span><br><span class="line">    startTime.set(System.currentTimeMillis());</span><br><span class="line">    log.info(<span class="string">"开始执行任务"</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">afterExecute</span><span class="params">(Runnable r, Throwable t)</span> </span>&#123;</span><br><span class="line">    log.info(<span class="string">"任务执行完成,执行耗时:"</span> + System.currentTimeMillis() - startTime.get());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="并发Map"><a href="#并发Map" class="headerlink" title="并发Map"></a>并发Map</h2><p>在并发编程中，我们经常使用的并发Map应该就是ConcurrentHashmap了，但是很多开发人员对于并发Map的使用可能也是有问题的，以下是一个错误的案例：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> Map&lt;String,String&gt; concurrentHashmap = <span class="keyword">new</span> ConcurrentHashMap&lt;&gt;();</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">getValue</span><span class="params">(String key)</span></span>&#123;</span><br><span class="line">    String value = concurrentHashmap.get(key);</span><br><span class="line">    <span class="keyword">if</span>(<span class="keyword">null</span> == value)&#123;</span><br><span class="line">        value = createValue(key);</span><br><span class="line">        concurrentHashmap.put(key,value);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> value;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在这个案例中，<code>value = createValue(key)</code>这行代码可能会有并发问题，在这行代码中，存在多个线程同时执行的情况，那么在这种情况下，map中存放的值就会成为薛定谔的值，如果两个线程同时执行，就会丢失掉一次创建的value值，因为最终保存到该key中的value只有一个。</p>
+<p>可以使用双重校验锁来规避以上这种情况：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">getValue1</span><span class="params">(String key)</span></span>&#123;</span><br><span class="line">    String value = concurrentHashmap.get(key);</span><br><span class="line">    <span class="keyword">if</span>(<span class="keyword">null</span> == value)&#123;</span><br><span class="line">        <span class="keyword">synchronized</span> (concurrentHashmap) &#123;</span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">null</span> == concurrentHashmap.get(key)) &#123;</span><br><span class="line">                value = createValue(key);</span><br><span class="line">                concurrentHashmap.put(key, value);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> value;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>也可以使用ConcurrentHashmap中自带的putIfAbsent()方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">getValue2</span><span class="params">(String key)</span></span>&#123;</span><br><span class="line">    String value = concurrentHashmap.get(key);</span><br><span class="line">    <span class="keyword">if</span>(<span class="keyword">null</span> == value)&#123;</span><br><span class="line">        value = createValue(key);</span><br><span class="line">        String old = concurrentHashmap.putIfAbsent(key, value);</span><br><span class="line">        <span class="keyword">if</span>(<span class="keyword">null</span> != old)&#123;</span><br><span class="line">            value = old;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> value;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>具体采取哪种方法可能需要根据自身业务的场景来决定，但在双重校验锁中不会重复创建value，而putIfAbsent()方法是需要先创建value才决定是否put进去，这也是需要进行权衡的一点。</p>
+<h1 id="SimpleDateFormat"><a href="#SimpleDateFormat" class="headerlink" title="SimpleDateFormat"></a>SimpleDateFormat</h1><p>SimpleDateFormat类相信大家都不陌生，我们经常采用它来进行时间的格式化操作，但是在使用这个类时也需要考虑其线程安全的问题，如果直接将该类作为全局变量来使用，那么就会引起错误：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> SimpleDateFormat sdf = <span class="keyword">new</span> SimpleDateFormat(<span class="string">"dd/MM/yyyy"</span>);</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">formatDate</span><span class="params">(Date date)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> sdf.format(date);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>查看SimpleDateFormat类的format()方法，发现其使用了全局共享变量<code>calendar</code>，因为该变量并不是线程安全的，所以在并发执行过程中就会发生错误：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> Calendar calendar;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> StringBuffer <span class="title">format</span><span class="params">(Date date, StringBuffer toAppendTo,</span></span></span><br><span class="line"><span class="function"><span class="params">                               FieldPosition pos)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        pos.beginIndex = pos.endIndex = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">return</span> format(date, toAppendTo, pos.getFieldDelegate());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> StringBuffer <span class="title">format</span><span class="params">(Date date, StringBuffer toAppendTo,</span></span></span><br><span class="line"><span class="function"><span class="params">                                FieldDelegate delegate)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// Convert input date to time field list</span></span><br><span class="line">    calendar.setTime(date);</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以采用局部变量的方式使用SimpleDateFormat来解决该问题：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">formatDate</span><span class="params">(Date date)</span> </span>&#123;</span><br><span class="line">    SimpleDateFormat sdf = <span class="keyword">new</span> SimpleDateFormat(<span class="string">"dd/MM/yyyy"</span>);</span><br><span class="line">    <span class="keyword">return</span> sdf.format(date);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>也可以采用ThreadLocal让每个线程持有一份SimpleDateFormat对象：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">ThreadLocal&lt;SimpleDateFormat&gt; local = <span class="keyword">new</span> ThreadLocal&lt;&gt;();</span><br><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">formatDate</span><span class="params">(Date date)</span> </span>&#123;</span><br><span class="line">    SimpleDateFormat sdf = local.get();</span><br><span class="line">    <span class="keyword">return</span> sdf.format(date);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当然，也可以采用加锁的方式来避免问题的产生，在JDK8中，也可以采用DateTimeFormatter类来替代时间格式化的功能。 </p>
+<h1 id="ThreadLocal"><a href="#ThreadLocal" class="headerlink" title="ThreadLocal"></a>ThreadLocal</h1><p>ThreadLocal 可能我们平常很少用到，但是在我们所使用的工具或框架中，经常能看见它的身影；ThreadLocal实际上就是用来维护本地线程中的变量，在Thread类的源码中，变量如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ThreadLocal.ThreadLocalMap threadLocals = <span class="keyword">null</span>;</span><br></pre></td></tr></table></figure>
+<p>ThreadLocal 的 get() 及 set() 方法源码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> T <span class="title">get</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    Thread t = Thread.currentThread();</span><br><span class="line">    ThreadLocalMap map = getMap(t);</span><br><span class="line">    <span class="keyword">if</span> (map != <span class="keyword">null</span>) &#123;</span><br><span class="line">        ThreadLocalMap.Entry e = map.getEntry(<span class="keyword">this</span>);</span><br><span class="line">        <span class="keyword">if</span> (e != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="meta">@SuppressWarnings</span>(<span class="string">"unchecked"</span>)</span><br><span class="line">            T result = (T)e.value;</span><br><span class="line">            <span class="keyword">return</span> result;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> setInitialValue();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">set</span><span class="params">(T value)</span> </span>&#123;</span><br><span class="line">    Thread t = Thread.currentThread();</span><br><span class="line">    ThreadLocalMap map = getMap(t);</span><br><span class="line">    <span class="keyword">if</span> (map != <span class="keyword">null</span>)</span><br><span class="line">        map.set(<span class="keyword">this</span>, value);</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        createMap(t, value);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">ThreadLocalMap <span class="title">getMap</span><span class="params">(Thread t)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> t.threadLocals;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>ThreadLocal 的使用也很简单，使用案例如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">ThreadLocal&lt;String&gt; localName = <span class="keyword">new</span> ThreadLocal&lt;&gt;();</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">xxx</span><span class="params">(String name)</span></span>&#123;</span><br><span class="line">    localName.set(name); </span><br><span class="line">    <span class="comment">//以下省略80行代码</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当两个线程同时执行xxx()方法时，线程A的name值为zhangsan，线程B的name值为lisi，则示意图如下：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/concurrent/ThreadLocal.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>所以，当两个线程执行如下代码时，线程A获取的值为zhangsan，而线程B获取的值为lisi：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">String name = localName.get();</span><br></pre></td></tr></table></figure>
+<p>每个ThreadLocal变量的值都保存到了各自线程中Thread的threadLocals变量里，也就是ThreadLocalMap中，如果创建多个ThreadLocal变量，则示意图如下：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/concurrent/ThreadLocalMap.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<h2 id="谨防内存泄漏"><a href="#谨防内存泄漏" class="headerlink" title="谨防内存泄漏"></a>谨防内存泄漏</h2><p>需要注意的一点是，在ThreadLocalMap中，它的Key是一个弱引用；也就是说它的Key在没有被外部对象强引用时，将会在下次GC时被回收，而它的Value却没有被回收，而这个访问不到的Value对象一直不会被回收，就发生了内存泄漏。</p>
+<p>ThreadLocalMap的结构如下，通过Entry来保存K/V结构的数据，而key只能为ThreadLocal类型：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadLocalMap</span> </span>&#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Entry</span> <span class="keyword">extends</span> <span class="title">WeakReference</span>&lt;<span class="title">ThreadLocal</span>&lt;?&gt;&gt; </span>&#123;</span><br><span class="line">        Object value;</span><br><span class="line">        Entry(ThreadLocal&lt;?&gt; k, Object v) &#123;</span><br><span class="line">            <span class="keyword">super</span>(k);</span><br><span class="line">            value = v;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">private</span> Entry[] table;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>正确的使用ThreadLocal对象，应该在每次set()及get()处理完逻辑后，显式的调用remove()方法来清除数据来避免内存泄漏；在使用线程池的场景下，如果没有及时的清理ThreadLocal，则可能导致更严重的逻辑错误。</p>
+
+        </div>
+
+        <blockquote class="post-copyright">
+    
+    <div class="content">
+        
+
+        
+        以上便是本篇博客的所有内容，感谢阅读，如有疑惑可以留下你的评论，谢谢！<br> 本篇文章地址：<a href="/concurrent/optimal.html" target="_blank" rel="external">https://jinjinz.top/concurrent/optimal.html</a>
+        
+    </div>
+    
+    <footer>
+        <a href="https://jinjinz.top">
+            <img src="/img/avatar.png" alt="Jin Jin">
+            Jin Jin
+        </a>
+    </footer>
+</blockquote>
+
+        
+<div class="page-reward">
+    <a id="rewardBtn" href="javascript:;" class="page-reward-btn waves-effect waves-circle waves-light">赏</a>
+</div>
+
+
+
+        <div class="post-footer">
+            
+	<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/并发/">并发</a></li></ul>
+
+
+            
+<div class="page-share-wrap">
+    
+
+<div class="page-share" id="pageShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=https://jinjinz.top/concurrent/optimal.html&title=《并发编程的最佳实践》 — JinJin's Blog&pic=https://jinjinz.top/img/avatar.png" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=https://jinjinz.top/concurrent/optimal.html&title=《并发编程的最佳实践》 — JinJin's Blog&source=分享Java相关技术,MySQL-锁-MVCC,设计模式,Spring源码分析" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=https://jinjinz.top/concurrent/optimal.html" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《并发编程的最佳实践》 — JinJin's Blog&url=https://jinjinz.top/concurrent/optimal.html&via=https://jinjinz.top" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=https://jinjinz.top/concurrent/optimal.html" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+
+    <a href="javascript:;" id="shareFab" class="page-share-fab waves-effect waves-circle">
+        <i class="icon icon-share-alt icon-lg"></i>
+    </a>
+</div>
+
+
+
+        </div>
+    </div>
+
+    
+<nav class="post-nav flex-row flex-justify-between">
+  
+    <div class="waves-block waves-effect prev">
+      <a href="/redis/redis-base.html" id="post-prev" class="post-nav-link">
+        <div class="tips"><i class="icon icon-angle-left icon-lg icon-pr"></i> Prev</div>
+        <h4 class="title">深入理解Redis的基础数据结构</h4>
+      </a>
+    </div>
+  
+
+  
+    <div class="waves-block waves-effect next">
+      <a href="/jvm/jvm-gc.html" id="post-next" class="post-nav-link">
+        <div class="tips">Next <i class="icon icon-angle-right icon-lg icon-pl"></i></div>
+        <h4 class="title">Java虚拟机中的垃圾回收算法与垃圾收集器</h4>
+      </a>
+    </div>
+  
+</nav>
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<section class="comments" id="comments">
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+        var id = location.pathname
+        if (location.pathname.length > 50) {
+          id = location.pathname.replace(/\/\d+\/\d+\/\d+\//, '').replace('/', '').substring(0, 50)
+        }
+        const gitalk = new Gitalk({
+          clientID: '217672eb040280538293',
+          clientSecret: '5a950867142dbcfd9fdc3de4491455bd3651c1a8',
+          repo: 'jinzzzzz.github.io',
+          owner: 'jinzzzzz',
+          admin: ['jinzzzzz'],
+          id: id,      // Ensure uniqueness and length less than 50
+          title: document.title.split('|')[0],
+          distractionFreeMode: false  // Facebook-like distraction free mode
+        })
+
+        gitalk.render('gitalk-container')
+    </script>
+</section>
+
+
+
+
+</article>
+
+<div id="reward" class="page-modal reward-lay">
+    <a class="close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <h3 class="reward-title">
+        <i class="icon icon-quote-left"></i>
+        谢谢大爷~
+        <i class="icon icon-quote-right"></i>
+    </h3>
+    <div class="reward-content">
+        
+        <div class="reward-code">
+            <img id="rewardCode" src="/img/alipay.png" alt="打赏二维码">
+        </div>
+        
+    </div>
+</div>
+
+
+
+</div>
+
+        <footer class="footer">
+    <div class="top">
+        
+<p>
+    <span id="busuanzi_container_site_uv" style="display:none">
+        站点总访客数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span id="busuanzi_container_site_pv" style="display:none">
+        站点总访问量：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</p>
+
+
+        <p>
+            
+                <span><a href="/atom.xml" target="_blank" class="rss" title="rss"><i class="icon icon-lg icon-rss"></i></a></span>
+            
+            <span>博客内容遵循 <a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh">知识共享 署名 - 非商业性 - 相同方式共享 4.0 国际协议</a></span>
+        </p>
+    </div>
+    <div class="bottom">
+        <p><span>Jin Jin &copy; 2019</span>
+            <span>
+                
+                Power by <a href="http://hexo.io/" target="_blank">Hexo</a> Theme <a href="https://github.com/yscoder/hexo-theme-indigo" target="_blank">indigo</a>
+            </span>
+        </p>
+    </div>
+</footer>
+
+    </main>
+    <div class="mask" id="mask"></div>
+<a href="javascript:;" id="gotop" class="waves-effect waves-circle waves-light"><span class="icon icon-lg icon-chevron-up"></span></a>
+
+
+
+<div class="global-share" id="globalShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=https://jinjinz.top/concurrent/optimal.html&title=《并发编程的最佳实践》 — JinJin's Blog&pic=https://jinjinz.top/img/avatar.png" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=https://jinjinz.top/concurrent/optimal.html&title=《并发编程的最佳实践》 — JinJin's Blog&source=分享Java相关技术,MySQL-锁-MVCC,设计模式,Spring源码分析" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=https://jinjinz.top/concurrent/optimal.html" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《并发编程的最佳实践》 — JinJin's Blog&url=https://jinjinz.top/concurrent/optimal.html&via=https://jinjinz.top" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=https://jinjinz.top/concurrent/optimal.html" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+<div class="page-modal wx-share" id="wxShare">
+    <a class="close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMYAAADGCAAAAACs8KCBAAACIUlEQVR42u3aUa6CQAwFUPa/ad8CDHrbwkssZ76MEeTwcdPp9Dji9TpZ77/5/Pnszu//ctyxMDAwfpbx+rjO/mByVf6Ckn/BwMB4DiOJwiTlkhidhzUGBgZGfuv7IhgDAwPj2sDNN6v5K8DAwMDobWKTjWj1ofMG3GV7cQwMjB9k5F33//98y/kGBgbGTzFexZWH7B3xevpUGBgYqxl5wPUeel4a5s+DgYGxlVE9pOy11ZJy8/O1X+6GgYHxAEa1HOxtNastvLzNh4GB8RzG5+xKBiOqvMnLOt2LY2BgLGXkJd1kU9oL6KQOxMDAeAIjaf0nDbXqWMYk1o/kQTEwMNYxqoeL80IwH/P68sowMDBWMyZ99Sq+hymUmxgYGEsZ1WPL3lBFXhTmB5zRtAgGBsYiRr56rbfJtZcNW2BgYCxi5M36XhGZf5NHMAYGxhMYeUHWg1XLwfKRJwYGxsMYeeNs3lyrxuvp9xgYGKsZvSPGq2K0GvdRHGNgYCxlTBpkebDOX9mX8MXAwHgwo3CUWCwrq2275twZBgbGIkYCyNl52XfEKyoNMTAw1jF6rfykcV9lTAbOMDAwdjN6Yddr4veOBKrtOQwMjK2MPGSrAZqEcm+THFWOGBgY6xjz/lV+bFAeoUh+iYGBgdGK1/lYWOGlYGBgYAz2x5PRsUKIY2BgPIBRPQzIN7r5nSeDZRgYGLsZva3jZETj2vFWDAyM1Yw/CqEi4A0GBJkAAAAASUVORK5CYII=" alt="微信分享二维码">
+</div>
+
+
+
+
+    <script src="//cdn.bootcss.com/node-waves/0.7.4/waves.min.js"></script>
+<script>
+var BLOG = { ROOT: '/', SHARE: true, REWARD: true };
+
+
+</script>
+
+<script src="/js/main.min.js?v=1.7.2"></script>
+
+
+<div class="search-panel" id="search-panel">
+    <ul class="search-result" id="search-result"></ul>
+</div>
+<template id="search-tpl">
+<li class="item">
+    <a href="{path}" class="waves-block waves-effect">
+        <div class="title ellipsis" title="{title}">{title}</div>
+        <div class="flex-row flex-middle">
+            <div class="tags ellipsis">
+                {tags}
+            </div>
+            <time class="flex-col time">{date}</time>
+        </div>
+    </a>
+</li>
+</template>
+
+<script src="/js/search.min.js?v=1.7.2" async></script>
+
+
+
+
+
+
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+</body>
+</html>
