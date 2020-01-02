@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html>
+<head><meta name="generator" content="Hexo 3.8.0">
+    
+
+    
+
+    
+
+
+
+    <meta charset="utf-8">
+    
+    
+    
+    <link rel="canonical" href="true/tool/arthas.html">
+    
+    
+    <title>Java诊断工具-Arthas简单使用 | JinJin&#39;s Blog | 欲渡黄河冰塞川，将登太行雪满山</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    
+    <meta name="theme-color" content="#3F51B5">
+    
+    
+    <meta name="keywords" content="工具">
+    <meta name="description" content="Arthas 是阿里中间件基于 Greys 进⾏⼆次开发开源的一个监控线上应用内存、线程、gc情况的诊断产品，能在不修改服务代码的情况下，对我们产生的业务问题进行诊断，例如查看方法的入参、出参、异常或方法调用链的耗时等，能够很好的提升线上问题排查效率。 Arthas 官方文档地址：https://alibaba.github.io/arthas/index.html 在官方文档中已经提到，Arth">
+<meta name="keywords" content="工具">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java诊断工具-Arthas简单使用">
+<meta property="og:url" content="https://jinjinz.top/tool/arthas.html">
+<meta property="og:site_name" content="JinJin&#39;s Blog">
+<meta property="og:description" content="Arthas 是阿里中间件基于 Greys 进⾏⼆次开发开源的一个监控线上应用内存、线程、gc情况的诊断产品，能在不修改服务代码的情况下，对我们产生的业务问题进行诊断，例如查看方法的入参、出参、异常或方法调用链的耗时等，能够很好的提升线上问题排查效率。 Arthas 官方文档地址：https://alibaba.github.io/arthas/index.html 在官方文档中已经提到，Arth">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://jinjinz.top/Users/jinjin/Documents/arthas/dashboard.png">
+<meta property="og:image" content="https://jinjinz.top/Users/jinjin/Documents/arthas/arthas-thread.png">
+<meta property="og:image" content="https://jinjinz.top/Users/jinjin/Documents/arthas/arthas-thread-n.png">
+<meta property="og:image" content="https://jinjinz.top/Users/jinjin/Documents/arthas/arthas-jad.png">
+<meta property="og:image" content="https://jinjinz.top/Users/jinjin/Documents/arthas/arthas-jad-only.png">
+<meta property="og:image" content="https://jinjinz.top/Users/jinjin/Documents/arthas/arthas-jad-method.png">
+<meta property="og:image" content="https://jinjinz.top/Users/jinjin/Documents/arthas/arthas-jad-c.png">
+<meta property="og:updated_time" content="2020-01-02T11:28:03.897Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Java诊断工具-Arthas简单使用">
+<meta name="twitter:description" content="Arthas 是阿里中间件基于 Greys 进⾏⼆次开发开源的一个监控线上应用内存、线程、gc情况的诊断产品，能在不修改服务代码的情况下，对我们产生的业务问题进行诊断，例如查看方法的入参、出参、异常或方法调用链的耗时等，能够很好的提升线上问题排查效率。 Arthas 官方文档地址：https://alibaba.github.io/arthas/index.html 在官方文档中已经提到，Arth">
+<meta name="twitter:image" content="https://jinjinz.top/Users/jinjin/Documents/arthas/dashboard.png">
+    
+        <link rel="alternate" type="application/atom+xml" title="JinJin&#39;s Blog" href="/atom.xml">
+    
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/css/style.css?v=1.7.2">
+    <script>window.lazyScripts=[]</script>
+
+    <!-- custom head -->
+    
+
+</head>
+
+<body>
+    <div id="loading" class="active"></div>
+
+    <aside id="menu" class="hide">
+  <div class="inner flex-row-vertical">
+    <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menu-off">
+        <i class="icon icon-lg icon-close"></i>
+    </a>
+    <div class="brand-wrap" style="background-image:url(/img/brand.jpg)">
+      <div class="brand">
+        <a href="/" class="avatar waves-effect waves-circle waves-light">
+          <img src="/img/avatar.png">
+        </a>
+        <hgroup class="introduce">
+          <h5 class="nickname">Jin Jin</h5>
+          <a href="mailto:jinmailon@gmail.com" title="jinmailon@gmail.com" class="mail">jinmailon@gmail.com</a>
+        </hgroup>
+      </div>
+    </div>
+    <div class="scroll-wrap flex-col">
+      <ul class="nav">
+        
+            <li class="waves-block waves-effect">
+              <a href="/">
+                <i class="icon icon-lg icon-home"></i>
+                home
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/archives">
+                <i class="icon icon-lg icon-archives"></i>
+                Archives
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/tags">
+                <i class="icon icon-lg icon-tags"></i>
+                Tags
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="https://github.com/jinzzzzz" target="_blank">
+                <i class="icon icon-lg icon-github"></i>
+                Github
+              </a>
+            </li>
+        
+      </ul>
+    </div>
+  </div>
+</aside>
+
+    <main id="main">
+        <header class="top-header" id="header">
+    <div class="flex-row">
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light on" id="menu-toggle">
+          <i class="icon icon-lg icon-navicon"></i>
+        </a>
+        <div class="flex-col header-title ellipsis">Java诊断工具-Arthas简单使用</div>
+        
+        <div class="search-wrap" id="search-wrap">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="back">
+                <i class="icon icon-lg icon-chevron-left"></i>
+            </a>
+            <input type="text" id="key" class="search-input" autocomplete="off" placeholder="输入感兴趣的关键字">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="search">
+                <i class="icon icon-lg icon-search"></i>
+            </a>
+        </div>
+        
+        
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menuShare">
+            <i class="icon icon-lg icon-share-alt"></i>
+        </a>
+        
+    </div>
+</header>
+<header class="content-header post-header">
+
+    <div class="container fade-scale">
+        <h1 class="title">Java诊断工具-Arthas简单使用</h1>
+        <h5 class="subtitle">
+            
+                <time datetime="2019-12-17T12:27:01.349Z" itemprop="datePublished" class="page-time">
+  2019-12-17
+</time>
+
+
+	<ul class="article-category-list"><li class="article-category-list-item"><a class="article-category-list-link" href="/categories/tool/">tool</a></li></ul>
+
+            
+        </h5>
+    </div>
+
+    
+
+
+</header>
+
+
+<div class="container body-wrap">
+    
+    <aside class="post-widget">
+        <nav class="post-toc-wrap post-toc-shrink" id="post-toc">
+            <h4>目录</h4>
+            <ol class="post-toc"><li class="post-toc-item post-toc-level-1"><a class="post-toc-link" href="#安装"><span class="post-toc-text">安装</span></a></li><li class="post-toc-item post-toc-level-1"><a class="post-toc-link" href="#命令"><span class="post-toc-text">命令</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#dashboard"><span class="post-toc-text">dashboard</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#使用参考"><span class="post-toc-text">使用参考</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#数据说明"><span class="post-toc-text">数据说明</span></a></li></ol></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#thread"><span class="post-toc-text">thread</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#jad"><span class="post-toc-text">jad</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#指定需要反编译的类"><span class="post-toc-text">指定需要反编译的类</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#反编译时只显示源码"><span class="post-toc-text">反编译时只显示源码</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#反编译时指定方法"><span class="post-toc-text">反编译时指定方法</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#反编译时指定类加载器"><span class="post-toc-text">反编译时指定类加载器</span></a></li></ol></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#watch"><span class="post-toc-text">watch</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#条件表达式"><span class="post-toc-text">条件表达式</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#观察方法异常信息"><span class="post-toc-text">观察方法异常信息</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#根据方法耗时进行过滤"><span class="post-toc-text">根据方法耗时进行过滤</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#观察当前对象中的属性"><span class="post-toc-text">观察当前对象中的属性</span></a></li></ol></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#trace"><span class="post-toc-text">trace</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#其他命令"><span class="post-toc-text">其他命令</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#基础命令"><span class="post-toc-text">基础命令</span></a></li></ol></li></ol>
+        </nav>
+    </aside>
+
+
+<article id="post-arthas" class="post-article article-type-post fade" itemprop="blogPost">
+
+    <div class="post-card">
+        <h1 class="post-card-title">Java诊断工具-Arthas简单使用</h1>
+        <div class="post-meta">
+            <time class="post-time" title="2019-12-17 20:27:01" datetime="2019-12-17T12:27:01.349Z" itemprop="datePublished">2019-12-17</time>
+
+            
+
+
+            
+<span id="busuanzi_container_page_pv" title="文章总阅读量" style="display:none">
+    <i class="icon icon-eye icon-pr"></i><span id="busuanzi_value_page_pv"></span>
+</span>
+
+
+        </div>
+        <div class="post-content" id="post-content" itemprop="postContent">
+            <p>Arthas 是阿里中间件基于 Greys 进⾏⼆次开发开源的一个监控线上应用内存、线程、gc情况的诊断产品，能在不修改服务代码的情况下，对我们产生的业务问题进行诊断，例如查看方法的入参、出参、异常或方法调用链的耗时等，能够很好的提升线上问题排查效率。</p>
+<p>Arthas 官方文档地址：<a href="https://alibaba.github.io/arthas/index.html" target="_blank" rel="noopener">https://alibaba.github.io/arthas/index.html</a></p>
+<p>在官方文档中已经提到，Arthas 能为你做什么？</p>
+<blockquote>
+<ol>
+<li>这个类从哪个 jar 包加载的？为什么会报各种类相关的 Exception？</li>
+<li>我改的代码为什么没有执行到？难道是我没 commit？分支搞错了？</li>
+<li>遇到问题无法在线上 debug，难道只能通过加日志再重新发布吗？</li>
+<li>线上遇到某个用户的数据处理有问题，但线上同样无法 debug，线下无法重现！</li>
+<li>是否有一个全局视角来查看系统的运行状况？</li>
+<li>有什么办法可以监控到JVM的实时运行状态？</li>
+<li>怎么快速定位应用的热点，生成火焰图？</li>
+</ol>
+</blockquote>
+<h1 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h1><p>下载<code>arthas-boot.jar</code>，之后使用<code>java -jar</code>启动即可：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">wget https://alibaba.github.io/arthas/arthas-boot.jar</span><br><span class="line">java -jar arthas-boot.jar</span><br></pre></td></tr></table></figure>
+<p>启动后选择对应java应用进程即可</p>
+<h1 id="命令"><a href="#命令" class="headerlink" title="命令"></a>命令</h1><h2 id="dashboard"><a href="#dashboard" class="headerlink" title="dashboard"></a>dashboard</h2><p>显示当前系统的实时数据面板，可以按 ctrl+c 退出。</p>
+<h3 id="使用参考"><a href="#使用参考" class="headerlink" title="使用参考"></a>使用参考</h3><figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="/Users/jinjin/Documents/arthas/dashboard.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<h3 id="数据说明"><a href="#数据说明" class="headerlink" title="数据说明"></a>数据说明</h3><ul>
+<li>ID: Java线程ID，注意这个ID并不能跟jstack中的nativeID对应</li>
+<li>NAME: 线程名称</li>
+<li>GROUP: 线程组名称</li>
+<li>PRIORITY: 线程优先级, 范围为1~10，越大优先级越高</li>
+<li>STATE: 线程状态</li>
+<li>CPU%: 线程消耗的cpu占比，采样100ms，将所有线程在这100ms内的cpu使用量求和，再算出每个线程的cpu使用占比。</li>
+<li>TIME: 线程运行总时间，数据格式为<code>分：秒</code></li>
+<li>INTERRUPTED: 线程当前的中断位状态</li>
+<li>DAEMON: 是否是daemon线程</li>
+</ul>
+<h2 id="thread"><a href="#thread" class="headerlink" title="thread"></a><strong>thread</strong></h2><p>查看当前线程信息及堆栈信息</p>
+<p><strong>参数说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数名称</th>
+<th>参数说明</th>
+<th>使用范例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>线程id</td>
+<td>thread 1</td>
+</tr>
+<tr>
+<td>n</td>
+<td>指定最忙的前N个线程并打印堆栈</td>
+<td>thread -n 5</td>
+</tr>
+<tr>
+<td>b</td>
+<td>找出当前阻塞其他线程的线程</td>
+<td>thread -b</td>
+</tr>
+<tr>
+<td>i</td>
+<td>指定cpu占比统计的采样间隔，单位为毫秒</td>
+<td>thread -n 5 -i 1000</td>
+</tr>
+</tbody>
+</table>
+<p>thread 查看所有线程信息</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="/Users/jinjin/Documents/arthas/arthas-thread.png" alt="arthas-thread" title>
+                </div>
+                <div class="image-caption">arthas-thread</div>
+            </figure>
+<p>thread -n 5 查看当前最忙的前N个线程并打印堆栈信息</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="/Users/jinjin/Documents/arthas/arthas-thread-n.png" alt="arthas-thread-n" title>
+                </div>
+                <div class="image-caption">arthas-thread-n</div>
+            </figure>
+<blockquote>
+<p>这里的cpu统计的是一段采样间隔内，当前JVM里各个线程所占用的cpu时间占总cpu时间的百分比。</p>
+<p>其计算方法为： 首先进行一次采样，调用的是<code>java.lang.management.ThreadMXBean#getThreadCpuTime</code>这个接口，获得所有线程的cpu的使用时间，然后睡眠一段时间，默认100ms，可以通过<code>-i</code>参数指定，然后再采样一次，最后得出这段时间内各个线程消耗的cpu时间情况，最后算出百分比。</p>
+</blockquote>
+<blockquote>
+<p>因为这个统计也会产生一定的开销，因此会看到as的线程占用一定的百分比，为了降低统计自身的开销带来的影响，可以把采样间隔拉长一些，比如5000毫秒。</p>
+</blockquote>
+<h2 id="jad"><a href="#jad" class="headerlink" title="jad"></a>jad</h2><p>将JVM中实际运行的class反编译指定已加载类的java源码</p>
+<p><strong>参数说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数名称</th>
+<th>参数说明</th>
+<th>使用范例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>class-pattern</td>
+<td>类名匹配</td>
+<td>jad java.lang.String</td>
+</tr>
+<tr>
+<td>c</td>
+<td>指定类加载器中的类进行编译</td>
+<td>jad org.slf4j.Logger -c 55f96302</td>
+</tr>
+</tbody>
+</table>
+<h3 id="指定需要反编译的类"><a href="#指定需要反编译的类" class="headerlink" title="指定需要反编译的类"></a>指定需要反编译的类</h3><figure class="highlight tex"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jad java.lang.String</span><br></pre></td></tr></table></figure>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="/Users/jinjin/Documents/arthas/arthas-jad.png" alt="arthas-jad" title>
+                </div>
+                <div class="image-caption">arthas-jad</div>
+            </figure>
+<h3 id="反编译时只显示源码"><a href="#反编译时只显示源码" class="headerlink" title="反编译时只显示源码"></a>反编译时只显示源码</h3><figure class="highlight tex"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jad --source-only java.lang.String</span><br></pre></td></tr></table></figure>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="/Users/jinjin/Documents/arthas/arthas-jad-only.png" alt="arthas-jad-only" title>
+                </div>
+                <div class="image-caption">arthas-jad-only</div>
+            </figure>
+<h3 id="反编译时指定方法"><a href="#反编译时指定方法" class="headerlink" title="反编译时指定方法"></a>反编译时指定方法</h3><figure class="highlight tex"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jad java.lang.String equals</span><br></pre></td></tr></table></figure>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="/Users/jinjin/Documents/arthas/arthas-jad-method.png" alt="arthas-jad-method" title>
+                </div>
+                <div class="image-caption">arthas-jad-method</div>
+            </figure>
+<h3 id="反编译时指定类加载器"><a href="#反编译时指定类加载器" class="headerlink" title="反编译时指定类加载器"></a>反编译时指定类加载器</h3><figure class="highlight tex"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">jad org.slf4j.Logger</span><br><span class="line">jad org.slf4j.Logger -c 55f96302</span><br></pre></td></tr></table></figure>
+<p>当有多个类加载器加载了所指定的类时，jad 命令会输出对应不同类加载器中实例的 hashcode，此时重新执行 jad 命令并使用 -c 参数指定 hashcode 即可指定加载类加载器中的类</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="/Users/jinjin/Documents/arthas/arthas-jad-c.png" alt="arthas-jad-c" title>
+                </div>
+                <div class="image-caption">arthas-jad-c</div>
+            </figure>
+<h2 id="watch"><a href="#watch" class="headerlink" title="watch"></a>watch</h2><p>watch 命令可以观察方法的返回值、入参、出参及方法抛出异常。</p>
+<p><strong>参数说明</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数名称</th>
+<th>参数说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>b</td>
+<td>在<strong>方法调用之前</strong>观察</td>
+</tr>
+<tr>
+<td>e</td>
+<td>在<strong>方法异常之后</strong>观察</td>
+</tr>
+<tr>
+<td>s</td>
+<td>在<strong>方法返回之后</strong>观察</td>
+</tr>
+<tr>
+<td>f</td>
+<td>在<strong>方法结束之后</strong>(正常返回和异常返回)观察</td>
+</tr>
+<tr>
+<td>x</td>
+<td>指定输出结果的属性遍历深度，默认为 1</td>
+</tr>
+</tbody>
+</table>
+<p>watch 命令示例 ： watch demo.MathGame primeFactors “{params,returnObj}” -x 2</p>
+<ul>
+<li>watch 命令定义了4个观察事件点，即 <code>-b</code> 方法调用前，<code>-e</code> 方法异常后，<code>-s</code> 方法返回后，<code>-f</code> 方法结束后</li>
+<li>4个观察事件点 <code>-b</code>、<code>-e</code>、<code>-s</code> 默认关闭，<code>-f</code> 默认打开，当指定观察点被打开后，在相应事件点会对观察表达式进行求值并输出</li>
+</ul>
+<h3 id="条件表达式"><a href="#条件表达式" class="headerlink" title="条件表达式"></a>条件表达式</h3><figure class="highlight tex"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">watch demo.MathGame primeFactors "&#123;params[0],target&#125;" "params[0]&lt;0</span><br></pre></td></tr></table></figure>
+<ul>
+<li>限定条件为第一个参数小于0的值</li>
+</ul>
+<h3 id="观察方法异常信息"><a href="#观察方法异常信息" class="headerlink" title="观察方法异常信息"></a>观察方法异常信息</h3><figure class="highlight tex"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">watch demo.MathGame primeFactors "&#123;params[0],throwExp&#125;" -e -x 2</span><br></pre></td></tr></table></figure>
+<ul>
+<li>-x 表示遍历深度，通过调整该参数来打印具体结果，默认值为1</li>
+<li>-e 表示抛出异常时</li>
+</ul>
+<h3 id="根据方法耗时进行过滤"><a href="#根据方法耗时进行过滤" class="headerlink" title="根据方法耗时进行过滤"></a>根据方法耗时进行过滤</h3><figure class="highlight tex"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">watch demo.MathGame primeFactors '&#123;params, returnObj&#125;' '#cost&gt;200' -x 2</span><br></pre></td></tr></table></figure>
+<ul>
+<li>#cost 的单位为 ms，只输出方法耗时大于200ms的方法调用</li>
+</ul>
+<h3 id="观察当前对象中的属性"><a href="#观察当前对象中的属性" class="headerlink" title="观察当前对象中的属性"></a>观察当前对象中的属性</h3><figure class="highlight tex"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">watch demo.MathGame primeFactors 'target.illegalArgumentCount'</span><br></pre></td></tr></table></figure>
+<ul>
+<li>使用<code>target</code>来表示当前对象，使用<code>target.fieldName</code>来访问对象中的某属性</li>
+</ul>
+<h2 id="trace"><a href="#trace" class="headerlink" title="trace"></a>trace</h2><p>方法内部调用路径，并输出方法路径上的每个节点上耗时</p>
+<figure class="highlight tex"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">trace demo.MathGame run -n 1 '#cost &gt; 10'</span><br></pre></td></tr></table></figure>
+<ul>
+<li>-n 指定方法捕捉结果次数</li>
+<li>#cost 可以指定方法的执行耗时大于某个指定的时间后的结果</li>
+</ul>
+<h2 id="其他命令"><a href="#其他命令" class="headerlink" title="其他命令"></a>其他命令</h2><ul>
+<li><p>jvm——查看当前JVM信息</p>
+</li>
+<li><p>sc——查看JVM已加载的类信息</p>
+</li>
+<li><p>sm——查看已加载类的方法信息</p>
+</li>
+<li><p>dump——dump 已加载类的 bytecode 到特定目录</p>
+</li>
+<li><p>headdump——dump java heap, 类似jmap命令heap dump功能</p>
+</li>
+<li><p>classloader——查看classloader的继承树，urls，类加载信息</p>
+</li>
+<li><p>monitor——方法执行监控</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">monitor -c 5 demo.MathGame primeFactors</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>stack——输出当前方法被调用的调用路径</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">stack demo.MathGame primeFactors 'params[0]&lt;0' '#cost&gt;5'</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="基础命令"><a href="#基础命令" class="headerlink" title="基础命令"></a>基础命令</h2><ul>
+<li>help——查看命令帮助信息</li>
+<li>cls——清空当前屏幕区域</li>
+<li>session——查看当前会话的信息</li>
+<li>reset——重置增强类，将被 Arthas 增强过的类全部还原，Arthas 服务端关闭时会重置所有增强过的类</li>
+<li>version——输出当前目标 Java 进程所加载的 Arthas 版本号</li>
+<li>history——打印命令历史</li>
+<li>quit——退出当前 Arthas 客户端，其他 Arthas 客户端不受影响</li>
+<li>stop——和<code>shutdown</code>命令一致（推荐使用，避免误操作）</li>
+<li>shutdown——关闭 Arthas 服务端，所有 Arthas 客户端全部退出</li>
+<li>keymap——Arthas快捷键列表及自定义快捷键</li>
+</ul>
+
+        </div>
+
+        <blockquote class="post-copyright">
+    
+    <div class="content">
+        
+
+        
+        以上便是本篇博客的所有内容，感谢阅读，如有疑惑可以留下你的评论，谢谢！<br> 本篇文章地址：<a href="/tool/arthas.html" target="_blank" rel="external">https://jinjinz.top/tool/arthas.html</a>
+        
+    </div>
+    
+    <footer>
+        <a href="https://jinjinz.top">
+            <img src="/img/avatar.png" alt="Jin Jin">
+            Jin Jin
+        </a>
+    </footer>
+</blockquote>
+
+        
+<div class="page-reward">
+    <a id="rewardBtn" href="javascript:;" class="page-reward-btn waves-effect waves-circle waves-light">赏</a>
+</div>
+
+
+
+        <div class="post-footer">
+            
+	<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/工具/">工具</a></li></ul>
+
+
+            
+<div class="page-share-wrap">
+    
+
+<div class="page-share" id="pageShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=https://jinjinz.top/tool/arthas.html&title=《Java诊断工具-Arthas简单使用》 — JinJin's Blog&pic=https://jinjinz.top/img/avatar.png" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=https://jinjinz.top/tool/arthas.html&title=《Java诊断工具-Arthas简单使用》 — JinJin's Blog&source=分享Java相关技术,MySQL-锁-MVCC,设计模式,Spring源码分析" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=https://jinjinz.top/tool/arthas.html" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《Java诊断工具-Arthas简单使用》 — JinJin's Blog&url=https://jinjinz.top/tool/arthas.html&via=https://jinjinz.top" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=https://jinjinz.top/tool/arthas.html" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+
+    <a href="javascript:;" id="shareFab" class="page-share-fab waves-effect waves-circle">
+        <i class="icon icon-share-alt icon-lg"></i>
+    </a>
+</div>
+
+
+
+        </div>
+    </div>
+
+    
+<nav class="post-nav flex-row flex-justify-between flex-row-reverse">
+  
+
+  
+    <div class="waves-block waves-effect next">
+      <a href="/redis/redis-base.html" id="post-next" class="post-nav-link">
+        <div class="tips">Next <i class="icon icon-angle-right icon-lg icon-pl"></i></div>
+        <h4 class="title">深入理解Redis的基础数据结构</h4>
+      </a>
+    </div>
+  
+</nav>
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<section class="comments" id="comments">
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+        var id = location.pathname
+        if (location.pathname.length > 50) {
+          id = location.pathname.replace(/\/\d+\/\d+\/\d+\//, '').replace('/', '').substring(0, 50)
+        }
+        const gitalk = new Gitalk({
+          clientID: '217672eb040280538293',
+          clientSecret: '5a950867142dbcfd9fdc3de4491455bd3651c1a8',
+          repo: 'jinzzzzz.github.io',
+          owner: 'jinzzzzz',
+          admin: ['jinzzzzz'],
+          id: id,      // Ensure uniqueness and length less than 50
+          title: document.title.split('|')[0],
+          distractionFreeMode: false  // Facebook-like distraction free mode
+        })
+
+        gitalk.render('gitalk-container')
+    </script>
+</section>
+
+
+
+
+</article>
+
+<div id="reward" class="page-modal reward-lay">
+    <a class="close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <h3 class="reward-title">
+        <i class="icon icon-quote-left"></i>
+        谢谢大爷~
+        <i class="icon icon-quote-right"></i>
+    </h3>
+    <div class="reward-content">
+        
+        <div class="reward-code">
+            <img id="rewardCode" src="/img/alipay.png" alt="打赏二维码">
+        </div>
+        
+    </div>
+</div>
+
+
+
+</div>
+
+        <footer class="footer">
+    <div class="top">
+        
+<p>
+    <span id="busuanzi_container_site_uv" style="display:none">
+        站点总访客数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span id="busuanzi_container_site_pv" style="display:none">
+        站点总访问量：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</p>
+
+
+        <p>
+            
+                <span><a href="/atom.xml" target="_blank" class="rss" title="rss"><i class="icon icon-lg icon-rss"></i></a></span>
+            
+            <span>博客内容遵循 <a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh">知识共享 署名 - 非商业性 - 相同方式共享 4.0 国际协议</a></span>
+        </p>
+    </div>
+    <div class="bottom">
+        <p><span>Jin Jin &copy; 2019 - 2020</span>
+            <span>
+                
+                Power by <a href="http://hexo.io/" target="_blank">Hexo</a> Theme <a href="https://github.com/yscoder/hexo-theme-indigo" target="_blank">indigo</a>
+            </span>
+        </p>
+    </div>
+</footer>
+
+    </main>
+    <div class="mask" id="mask"></div>
+<a href="javascript:;" id="gotop" class="waves-effect waves-circle waves-light"><span class="icon icon-lg icon-chevron-up"></span></a>
+
+
+
+<div class="global-share" id="globalShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=https://jinjinz.top/tool/arthas.html&title=《Java诊断工具-Arthas简单使用》 — JinJin's Blog&pic=https://jinjinz.top/img/avatar.png" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=https://jinjinz.top/tool/arthas.html&title=《Java诊断工具-Arthas简单使用》 — JinJin's Blog&source=分享Java相关技术,MySQL-锁-MVCC,设计模式,Spring源码分析" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=https://jinjinz.top/tool/arthas.html" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《Java诊断工具-Arthas简单使用》 — JinJin's Blog&url=https://jinjinz.top/tool/arthas.html&via=https://jinjinz.top" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=https://jinjinz.top/tool/arthas.html" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+<div class="page-modal wx-share" id="wxShare">
+    <a class="close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAK4AAACuCAAAAACKZ2kyAAABw0lEQVR42u3aMXLDMAwEQP//006bFJLvCIlWZpaVh7appQoMCPD1isf71zj69nwmX+2CgYuLO+a+T0cOOppJNpkYcHFx93Pz5Y4ekLyC89WSEImLi/tkbpuHJPO4uLj/kZsQ85VxcXGfz82TkvaYlHMvPqvh4uIOuHnKct/nW+q7uLi4S9z30rg2ASqei4uLu4XbBp22bDrpkB6+Dlxc3I3cpISRL9puKVkfFxf3u9w1+vljFhOaebUVFxe35J43P9piaPJu2o39+RcuLu527uSiVX4ZaxRMcXFxt3OvCl75Zup1cHFxt3CTB6xd3sqbLnXgw8XFvZm7BmrLKG1949CGi4u7kdsGqXxmnuLUPR9cXNybuWvHm0lK9OEV4OLibuG2xZFROWOp8Fq0WnFxcS/itqnG5ApFdBMkP6vh4uLexk0OLXkwyo9Sa+vj4uLu4a4FpjbYtYWSqOeDi4t7G/fa4JUkQ5OCLC4u7k7uWvCal0sWN4OLi7uRu9ZkbdOgJJrW9V1cXNyvcicN1/PDUpGL4eLiPozbXs7IG67Ft7i4uBu5kyJpMpMXRj/8EhcXdwt3chkiSXHa41N7UQMXF/dS7g+4TU3UuhraMAAAAABJRU5ErkJggg==" alt="微信分享二维码">
+</div>
+
+
+
+
+    <script src="//cdn.bootcss.com/node-waves/0.7.4/waves.min.js"></script>
+<script>
+var BLOG = { ROOT: '/', SHARE: true, REWARD: true };
+
+
+</script>
+
+<script src="/js/main.min.js?v=1.7.2"></script>
+
+
+<div class="search-panel" id="search-panel">
+    <ul class="search-result" id="search-result"></ul>
+</div>
+<template id="search-tpl">
+<li class="item">
+    <a href="{path}" class="waves-block waves-effect">
+        <div class="title ellipsis" title="{title}">{title}</div>
+        <div class="flex-row flex-middle">
+            <div class="tags ellipsis">
+                {tags}
+            </div>
+            <time class="flex-col time">{date}</time>
+        </div>
+    </a>
+</li>
+</template>
+
+<script src="/js/search.min.js?v=1.7.2" async></script>
+
+
+
+
+
+
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+</body>
+</html>
