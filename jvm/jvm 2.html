@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html>
+<head><meta name="generator" content="Hexo 3.8.0">
+    
+
+    
+
+    
+
+
+
+    <meta charset="utf-8">
+    
+    
+    
+    <link rel="canonical" href="true/jvm/jvm.html">
+    
+    
+    <title>Java虚拟机的基本认识及调优 | JinJin&#39;s Blog | 欲渡黄河冰塞川，将登太行雪满山</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    
+    <meta name="theme-color" content="#3F51B5">
+    
+    
+    <meta name="keywords" content="JVM">
+    <meta name="description" content="Java虚拟机的基本认识虚拟机，从字面上的意义来理解就是一台虚拟的计算机，虚拟机上运行的软件都受限于虚拟机提供的资源中。 虚拟机可以分为两类，系统虚拟机和程序虚拟机，例如VMware提供了一个可以运行的操作系统的软件平台，这就是典型的系统虚拟机，我们可以像使用物理的计算机一样来使用VMware中提供的虚拟机。而Java虚拟机就是为了执行某个计算机程序而被设计出来的程序虚拟机，在Java虚拟机中执行">
+<meta name="keywords" content="JVM">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java虚拟机的基本认识及调优">
+<meta property="og:url" content="https://jinjinz.top/jvm/jvm.html">
+<meta property="og:site_name" content="JinJin&#39;s Blog">
+<meta property="og:description" content="Java虚拟机的基本认识虚拟机，从字面上的意义来理解就是一台虚拟的计算机，虚拟机上运行的软件都受限于虚拟机提供的资源中。 虚拟机可以分为两类，系统虚拟机和程序虚拟机，例如VMware提供了一个可以运行的操作系统的软件平台，这就是典型的系统虚拟机，我们可以像使用物理的计算机一样来使用VMware中提供的虚拟机。而Java虚拟机就是为了执行某个计算机程序而被设计出来的程序虚拟机，在Java虚拟机中执行">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/jvm.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/jvm-st.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/java-help.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/java-version.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/java-x.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/printgc.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/gc-detail.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/top.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/vmstat.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/iostat.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/jdk-bin.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/jstat-class.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/jstat-compiler.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/jstat-gc.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/jmap-dump.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/jhart.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/jhat-7000.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/jhat.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/jhat-oql.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/visualvm.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/visualvm-index.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/visualvm-jvm.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/visualvm-s.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/visualvm-thard.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/visualvm-thard-dump.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/visualvm-cpu.png">
+<meta property="og:updated_time" content="2019-07-31T09:40:56.968Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Java虚拟机的基本认识及调优">
+<meta name="twitter:description" content="Java虚拟机的基本认识虚拟机，从字面上的意义来理解就是一台虚拟的计算机，虚拟机上运行的软件都受限于虚拟机提供的资源中。 虚拟机可以分为两类，系统虚拟机和程序虚拟机，例如VMware提供了一个可以运行的操作系统的软件平台，这就是典型的系统虚拟机，我们可以像使用物理的计算机一样来使用VMware中提供的虚拟机。而Java虚拟机就是为了执行某个计算机程序而被设计出来的程序虚拟机，在Java虚拟机中执行">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/jvm.png">
+    
+        <link rel="alternate" type="application/atom+xml" title="JinJin&#39;s Blog" href="/atom.xml">
+    
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/css/style.css?v=1.7.2">
+    <script>window.lazyScripts=[]</script>
+
+    <!-- custom head -->
+    
+
+</head>
+
+<body>
+    <div id="loading" class="active"></div>
+
+    <aside id="menu" class="hide">
+  <div class="inner flex-row-vertical">
+    <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menu-off">
+        <i class="icon icon-lg icon-close"></i>
+    </a>
+    <div class="brand-wrap" style="background-image:url(/img/brand.jpg)">
+      <div class="brand">
+        <a href="/" class="avatar waves-effect waves-circle waves-light">
+          <img src="/img/avatar.png">
+        </a>
+        <hgroup class="introduce">
+          <h5 class="nickname">Jin Jin</h5>
+          <a href="mailto:jinmailon@gmail.com" title="jinmailon@gmail.com" class="mail">jinmailon@gmail.com</a>
+        </hgroup>
+      </div>
+    </div>
+    <div class="scroll-wrap flex-col">
+      <ul class="nav">
+        
+            <li class="waves-block waves-effect">
+              <a href="/">
+                <i class="icon icon-lg icon-home"></i>
+                home
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/archives">
+                <i class="icon icon-lg icon-archives"></i>
+                Archives
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/tags">
+                <i class="icon icon-lg icon-tags"></i>
+                Tags
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="https://github.com/jinzzzzz" target="_blank">
+                <i class="icon icon-lg icon-github"></i>
+                Github
+              </a>
+            </li>
+        
+      </ul>
+    </div>
+  </div>
+</aside>
+
+    <main id="main">
+        <header class="top-header" id="header">
+    <div class="flex-row">
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light on" id="menu-toggle">
+          <i class="icon icon-lg icon-navicon"></i>
+        </a>
+        <div class="flex-col header-title ellipsis">Java虚拟机的基本认识及调优</div>
+        
+        <div class="search-wrap" id="search-wrap">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="back">
+                <i class="icon icon-lg icon-chevron-left"></i>
+            </a>
+            <input type="text" id="key" class="search-input" autocomplete="off" placeholder="输入感兴趣的关键字">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="search">
+                <i class="icon icon-lg icon-search"></i>
+            </a>
+        </div>
+        
+        
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menuShare">
+            <i class="icon icon-lg icon-share-alt"></i>
+        </a>
+        
+    </div>
+</header>
+<header class="content-header post-header">
+
+    <div class="container fade-scale">
+        <h1 class="title">Java虚拟机的基本认识及调优</h1>
+        <h5 class="subtitle">
+            
+                <time datetime="2019-05-03T08:55:16.000Z" itemprop="datePublished" class="page-time">
+  2019-05-03
+</time>
+
+
+	<ul class="article-category-list"><li class="article-category-list-item"><a class="article-category-list-link" href="/categories/jvm/">jvm</a></li></ul>
+
+            
+        </h5>
+    </div>
+
+    
+
+
+</header>
+
+
+<div class="container body-wrap">
+    
+    <aside class="post-widget">
+        <nav class="post-toc-wrap post-toc-shrink" id="post-toc">
+            <h4>目录</h4>
+            <ol class="post-toc"><li class="post-toc-item post-toc-level-1"><a class="post-toc-link" href="#Java虚拟机的基本认识"><span class="post-toc-text">Java虚拟机的基本认识</span></a></li><li class="post-toc-item post-toc-level-1"><a class="post-toc-link" href="#Java虚拟机基本结构"><span class="post-toc-text">Java虚拟机基本结构</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#类加载器子系统"><span class="post-toc-text">类加载器子系统</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#运行时数据区"><span class="post-toc-text">运行时数据区</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#堆"><span class="post-toc-text">堆</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#方法区"><span class="post-toc-text">方法区</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#Java栈"><span class="post-toc-text">Java栈</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#本地方法栈"><span class="post-toc-text">本地方法栈</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#PC寄存器"><span class="post-toc-text">PC寄存器</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#直接内存"><span class="post-toc-text">直接内存</span></a></li></ol></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#执行引擎"><span class="post-toc-text">执行引擎</span></a></li></ol></li><li class="post-toc-item post-toc-level-1"><a class="post-toc-link" href="#Java虚拟机配置参数"><span class="post-toc-text">Java虚拟机配置参数</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#标准参数"><span class="post-toc-text">标准参数</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#非标准参数"><span class="post-toc-text">非标准参数</span></a></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#不稳定参数"><span class="post-toc-text">不稳定参数</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#跟踪参数"><span class="post-toc-text">跟踪参数</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#堆参数"><span class="post-toc-text">堆参数</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#非堆参数"><span class="post-toc-text">非堆参数</span></a></li></ol></li></ol></li><li class="post-toc-item post-toc-level-1"><a class="post-toc-link" href="#性能监控"><span class="post-toc-text">性能监控</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#Linux下的性能监控"><span class="post-toc-text">Linux下的性能监控</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#系统整体资源使用情况"><span class="post-toc-text">系统整体资源使用情况</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#内存和CPU使用情况"><span class="post-toc-text">内存和CPU使用情况</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#IO使用情况"><span class="post-toc-text">IO使用情况</span></a></li></ol></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#Java程序性能监控"><span class="post-toc-text">Java程序性能监控</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#查看Java进程"><span class="post-toc-text">查看Java进程</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#查看堆内存使用情况"><span class="post-toc-text">查看堆内存使用情况</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#查看class加载统计信息"><span class="post-toc-text">查看class加载统计信息</span></a></li><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#查看JIT编译统计信息"><span class="post-toc-text">查看JIT编译统计信息</span></a></li><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#查看GC统计信息"><span class="post-toc-text">查看GC统计信息</span></a></li></ol></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#导出堆信息及分析"><span class="post-toc-text">导出堆信息及分析</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#可视化性能监控工具"><span class="post-toc-text">可视化性能监控工具</span></a></li></ol></li></ol></li></ol>
+        </nav>
+    </aside>
+
+
+<article id="post-jvm" class="post-article article-type-post fade" itemprop="blogPost">
+
+    <div class="post-card">
+        <h1 class="post-card-title">Java虚拟机的基本认识及调优</h1>
+        <div class="post-meta">
+            <time class="post-time" title="2019-05-03 16:55:16" datetime="2019-05-03T08:55:16.000Z" itemprop="datePublished">2019-05-03</time>
+
+            
+
+
+            
+<span id="busuanzi_container_page_pv" title="文章总阅读量" style="display:none">
+    <i class="icon icon-eye icon-pr"></i><span id="busuanzi_value_page_pv"></span>
+</span>
+
+
+        </div>
+        <div class="post-content" id="post-content" itemprop="postContent">
+            <h1 id="Java虚拟机的基本认识"><a href="#Java虚拟机的基本认识" class="headerlink" title="Java虚拟机的基本认识"></a>Java虚拟机的基本认识</h1><p>虚拟机，从字面上的意义来理解就是一台虚拟的计算机，虚拟机上运行的软件都受限于虚拟机提供的资源中。</p>
+<p>虚拟机可以分为两类，系统虚拟机和程序虚拟机，例如VMware提供了一个可以运行的操作系统的软件平台，这就是典型的系统虚拟机，我们可以像使用物理的计算机一样来使用VMware中提供的虚拟机。而Java虚拟机就是为了执行某个计算机程序而被设计出来的程序虚拟机，在Java虚拟机中执行的指令被称为Java字节码指令。</p>
+<p>一个Java程序被编译成字节码，就可以通过Java虚拟机运行在各个操作系统平台中；也就是说Java程序通过Java虚拟机实现了跨平台的特性，如下图所示：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/jvm.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>正是因为有了Java虚拟机，我们的Java程序在不同操作系统平台中运行时不需要重新编译，只要Java程序被编译为在Java虚拟机上运行的字节码，就可以在不同操作系统平台上运行。</p>
+<h1 id="Java虚拟机基本结构"><a href="#Java虚拟机基本结构" class="headerlink" title="Java虚拟机基本结构"></a>Java虚拟机基本结构</h1><p>Java虚拟机的结构由以下几部分组成：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/jvm-st.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<h2 id="类加载器子系统"><a href="#类加载器子系统" class="headerlink" title="类加载器子系统"></a>类加载器子系统</h2><p>类加载器子系统负责从文件或者网络中加载Class信息，加载后的类信息存放在方法区中。</p>
+<p>对于任意一个类，都需要由加载他的类加载器和这个类本身一同确定其在Java虚拟机中的唯一性，每一个类加载器，都拥有一个独立的类名称空间。</p>
+<p>类加载器子系统中的类加载器一共有三种类型，分别是启动类加载器、扩展类加载器和应用程序类加载器，各加载器的作用如下：</p>
+<ul>
+<li>启动类加载器(Bootstrap ClassLoader)：负责将存放在&lt;JAVA_HOME&gt;\lib目录或-Xbootclasspath参数指定的路径中的类库加载到内存中。该加载器由C++语言实现。</li>
+<li>扩展类加载器(Extension ClassLoader)：负责加载&lt;JAVA_HOME&gt;\lib\ext目录或java.ext.dirs系统变量指定的路径中的所有类库。</li>
+<li>应用程序类加载器(Application ClassLoader)：负责加载用户类路径上的指定类库，这是程序中默认的类加载器。</li>
+</ul>
+<p>当一个类加载器收到了类加载的请求后，他首先不会自己去尝试加载这个类，而是把这个请求委派父类加载器去完成。因此所有的加载请求最终都会到顶层的启动类加载器中，只有当父加载器的加载范围中不需要加载这个类时，子加载器才会尝试自己去加载，这就是类加载器中的双亲委派模型。</p>
+<p>双亲委任模型的实现代码实现在java.lang.ClassLoader中的loadClass方法之中，代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> Class&lt;?&gt; loadClass(String name, <span class="keyword">boolean</span> resolve)</span><br><span class="line">        <span class="keyword">throws</span> ClassNotFoundException</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">synchronized</span> (getClassLoadingLock(name)) &#123;</span><br><span class="line">            <span class="comment">// 检查类是否已经加载</span></span><br><span class="line">            Class&lt;?&gt; c = findLoadedClass(name);</span><br><span class="line">            <span class="keyword">if</span> (c == <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">long</span> t0 = System.nanoTime();</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    <span class="keyword">if</span> (parent != <span class="keyword">null</span>) &#123;</span><br><span class="line">                        c = parent.loadClass(name, <span class="keyword">false</span>);</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        c = findBootstrapClassOrNull(name);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">catch</span> (ClassNotFoundException e) &#123;</span><br><span class="line">                    <span class="comment">//父类抛出异常表示无法完成加载请求</span></span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                <span class="keyword">if</span> (c == <span class="keyword">null</span>) &#123; </span><br><span class="line">                    <span class="comment">//调用自身的findClass()方法进行加载</span></span><br><span class="line">                    <span class="keyword">long</span> t1 = System.nanoTime();</span><br><span class="line">                    c = findClass(name);</span><br><span class="line"></span><br><span class="line">                    <span class="comment">// this is the defining class loader; record the stats</span></span><br><span class="line">                    sun.misc.PerfCounter.getParentDelegationTime().addTime(t1 - t0);</span><br><span class="line">                    sun.misc.PerfCounter.getFindClassTime().addElapsedTimeFrom(t1);</span><br><span class="line">                    sun.misc.PerfCounter.getFindClasses().increment();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (resolve) &#123;</span><br><span class="line">                resolveClass(c);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> c;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<h2 id="运行时数据区"><a href="#运行时数据区" class="headerlink" title="运行时数据区"></a>运行时数据区</h2><p>Java虚拟机在执行Java程序的过程中会把它所管理的内存划分成若干个不同的数据区域，这些数据区域都有各自的用途，有的区域随着虚拟机进程的启动而存在，有些区域则依赖用户线程的启动和结束而建立和销毁。</p>
+<h3 id="堆"><a href="#堆" class="headerlink" title="堆"></a>堆</h3><p>Java堆是Java程序主要的内存工作区域，堆中存放了Java的对象实例，且堆的空间是所有的线程共享的。</p>
+<p>Java堆也是垃圾收集器管理的主要区域。如果从内存回收的角度看，由于现在收集器基本都是采用的分代收集算法，所以Java堆中还可以细分为：新生代和老年代；且新生代一般还以8:1:1的空间划分出了一个Eden区和两个Survivor区。</p>
+<h3 id="方法区"><a href="#方法区" class="headerlink" title="方法区"></a>方法区</h3><p>方法区与Java堆一样，是各个线程共享的内存区域，用于存储已被虚拟机加载的类信息、常量、静态变量、即时编译器编译后的代码等数据。</p>
+<h3 id="Java栈"><a href="#Java栈" class="headerlink" title="Java栈"></a>Java栈</h3><p>每个线程都会有一个私有的Java栈，Java栈的生命周期与线程相同。每个方法被执行的时候都会同时创建一个栈帧用于存储局部变量表、操作栈、动态链接、方法出口等信息。每一个方法被调用直至执行完成的过程，就对应着一个栈帧在虚拟机栈中从入栈到出栈的过程。</p>
+<h3 id="本地方法栈"><a href="#本地方法栈" class="headerlink" title="本地方法栈"></a>本地方法栈</h3><p>本地方法栈与Java栈类似，其区别在于Java栈用于Java方法的调用，而本地方法栈则用于本地方法的调用。本地方法一般使用C语言编写。</p>
+<h3 id="PC寄存器"><a href="#PC寄存器" class="headerlink" title="PC寄存器"></a>PC寄存器</h3><p>PC寄存器也是每个线程私有的空间，Java虚拟机会为每一个线程都创建PC寄存器。</p>
+<p>如果线程正在执行的是一个Java方法，PC寄存器就会指向当前正在被执行的指令；如果正在执行的是Natvie方法，PC寄存器的值则为undefined。</p>
+<h3 id="直接内存"><a href="#直接内存" class="headerlink" title="直接内存"></a>直接内存</h3><p>直接内存并不是虚拟机运行时数据区的一部分。但是这部分内存也被频繁的使用，并且也可能导致内存溢出。</p>
+<p>在JDK1.4中新加入NIO类,引入了一种基于Channel与Buffer的IO方式,它可以直接分配堆外内存,通过一个存储在Java堆中的DirectByteBuffer对象作为这块内存的引用进行操作。这样避免了在Java堆和Native对中来回复制数据，能在一些场景中提高性能。</p>
+<p>由于直接内存是在堆外的，因此直接内存的大小不会受限于堆的大小，但是系统的物理内存也是有限的，直接内存和堆内存的综合依然受限于操作系统中的最大内存。</p>
+<h2 id="执行引擎"><a href="#执行引擎" class="headerlink" title="执行引擎"></a>执行引擎</h2><p>在不同的虚拟机实现里面，执行引擎在执行Java代码的时候可能会有解释执行和编译执行，也可能两者兼备。</p>
+<p>但所有的Java虚拟机的执行引擎的核心功能都是输入字节码文件，然后将其编译为机器码后进行执行。</p>
+<h1 id="Java虚拟机配置参数"><a href="#Java虚拟机配置参数" class="headerlink" title="Java虚拟机配置参数"></a>Java虚拟机配置参数</h1><p>在启动Java程序时，可以设置特定的Java虚拟机参数来进行系统调优或进行故障排查。</p>
+<p>Java虚拟机中的配置参数可以分为三类，分别为标准参数、非标准参数和不稳定参数。</p>
+<h2 id="标准参数"><a href="#标准参数" class="headerlink" title="标准参数"></a>标准参数</h2><p>Java虚拟机中的标准参数，所有的Java虚拟机实现都必须实现这些参数的功能，并且向后兼容。</p>
+<p>可以在命令行中使用 <code>java -help</code> 检索出所有的标准参数：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/java-help.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>可以使用标准参数 <code>-version</code> 查看java虚拟机版本信息：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/java-version.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<h2 id="非标准参数"><a href="#非标准参数" class="headerlink" title="非标准参数"></a>非标准参数</h2><p>Java虚拟机中的-X参数是非标准参数，Java虚拟机会实现这些参数的功能，但是并不保证所有Java虚拟机实现都满足，且不保证向后兼容；可以通过 <code>java -X</code> 检索出所有的非标准参数：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/java-x.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>最常使用的两个非标准参数为<code>-Xms</code>和<code>-Xmx</code>分别是设置堆的初始化大小和最大大小。适当的调整jvm的内存大小，可以充分利用服务器资源，让程序得到性能的提升。</p>
+<h2 id="不稳定参数"><a href="#不稳定参数" class="headerlink" title="不稳定参数"></a>不稳定参数</h2><p>Java虚拟机中的-XX参数是不稳定参数。而且如果在新版本有什么改动也不会发布通知。这些参数中有很多对于我们来讲是非常有用的。</p>
+<p>-XX参数的使用有2种方式，一种是boolean类型，一种是非boolean类型</p>
+<p> boolean类型的选项为-XX:+ 打开， -XX:- 关闭。例如<code>-XX:+DisableExplicitGC</code> 表示禁用手动调用gc操作。</p>
+<p>非boolean类型的选项通过-XX:= 设定。例如<code>-XX:NewRatio=1</code> 表示新生代和老年代的比值。</p>
+<p>事实上不稳定参数也是我们在调优时最经常使用的参数，不稳定参数中的参数可以分为跟踪参数，堆参数及非堆参数3种类别。</p>
+<h3 id="跟踪参数"><a href="#跟踪参数" class="headerlink" title="跟踪参数"></a>跟踪参数</h3><p>在程序运行的时候，虚拟机提供了一些跟踪系统状态的参数，这些参数能对我们的故障排查有一定帮助；使用给定的参数就可以在程序运行时打印相关日志来帮助我们用于问题的分析。</p>
+<p>我们可以添加一些跟踪参数来查看垃圾回收的效果。</p>
+<p>简单的打印GC日志的参数为<code>-XX:+PrintGC</code>，在启动参数上添加后，则会打印简单的GC日志。</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/printgc.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>这个日志中一共进行了4次GC，在第一次GC时，在GC前堆空间的使用量为83133K，在GC后堆空间的使用量为21057K，当前可用的堆空间大小为129536K，最后显示的为本次GC所消耗的时间。</p>
+<p>如果需要打印更详细的GC日志信息，可以使用<code>-XX:+PrintGCDetails</code>参数，该参数的输出例子如下：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/gc-detail.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<h3 id="堆参数"><a href="#堆参数" class="headerlink" title="堆参数"></a>堆参数</h3><p>堆空间在Java程序中是非常重要的部分，所以对于堆参数的配置也是对我们的程序性能有着重大影响的。</p>
+<p>例如我们可以使用<code>-XX:SurvivorRatio</code>来设置年轻代中Eden区和Survivor区的比例大小以及参数<code>-XX:NewRatio</code>来设置新生代和老年代的比例。</p>
+<p>有时在程序的运行过程中，可能会出现内存溢出的异常，可以使用相关参数来打印内存溢出时的堆信息，首先使用参数<code>-XX:+HeapDumpOnOutOfMemoryError</code>开启内存溢出时导出堆相关信息，然后在参数<code>-XX:HeapDumpPath</code>中配置导出堆信息时的路径或文件名。</p>
+<h3 id="非堆参数"><a href="#非堆参数" class="headerlink" title="非堆参数"></a>非堆参数</h3><p>除了堆内存，我们还可以配置方法区、栈及直接内存的内存参数，合理的配置这些参数，也能对我们的应用程序性能的提高和稳定性产生作用。</p>
+<p>使用<code>-XX:MaxMetaspaceSize</code>参数可以设置在JDK1.8中的元数据空间大小。</p>
+<p>使用<code>-XX:MaxDirectMemorySize</code>参数可以设置直接内存的最大大小，默认为堆空间的最大大小，如果直接内存的内存溢出也会引起系统的OOM。</p>
+<p>使用<code>-XX:+DoEscapeAnalysis</code>参数可以开启或关闭栈空间中对象的逃逸分析。</p>
+<h1 id="性能监控"><a href="#性能监控" class="headerlink" title="性能监控"></a>性能监控</h1><p>性能是无论如何在什么时候都需要关注的重要指标，所以我们需要有效的监控和诊断性能问题。</p>
+<h2 id="Linux下的性能监控"><a href="#Linux下的性能监控" class="headerlink" title="Linux下的性能监控"></a>Linux下的性能监控</h2><p>很多Java程序都运行在Linux下，所以我们需要介绍下如何在Linux平台下进行性能监控。</p>
+<h3 id="系统整体资源使用情况"><a href="#系统整体资源使用情况" class="headerlink" title="系统整体资源使用情况"></a>系统整体资源使用情况</h3><p><code>top</code>命令经常用来监控Linux的系统状况，比如cpu、内存的使用及进程的信息等等，<code>top</code>命令的输出样例如下：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/top.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>在<code>top</code>命令输出的信息中，可以分为两个部分，上半部分是系统统计信息，下半部分是进程信息。</p>
+<p>在系统统计信息中，第一行是任务队列信息，左边部分为系统当前时间，系统运行时间和当前登录用户数，右边的load average表示系统的平均负载，3个值分别表示1分钟、5分钟、15分钟到现在的平均值。    </p>
+<p>第二行是进程的统计信息，首先显示了所有的进程数，以及运行中的进程和睡眠的进程、停止状态的进程及僵尸进程。</p>
+<p>第三行是CPU统计信息，这里显示了不同模式下所占用CPU时间的占用率，这些不同模式分别表示：</p>
+<ul>
+<li>us：用户空间的CPU占用率</li>
+<li>sy：内核空间的CPU占用率</li>
+<li>ni：改变过优先级的用户进程CPU占用率</li>
+<li>id：CPU空闲的占用率</li>
+<li>wa：等待输入输出的CPU占用率，也就是等待IO的CPU占用率</li>
+<li>hi：处理硬件中断的CPU占用率</li>
+<li>si：处理软件中断的CPU占用率</li>
+</ul>
+<p>第四行的Mem及第五行的Swap是内存统计信息，Mem是物理内存使用，Swap是虚拟内存使用。total为全部可用内存，free为空闲内存，used为已使用内存，最后为缓冲区内存。</p>
+<p>在<code>top</code>命令的下半部分则是进程信息，显示了系统内的进程资源使用情况，其中主要字段的含义如下：</p>
+<ul>
+<li>PID：进程ID</li>
+<li>USER：进程所有者的用户名</li>
+<li>PR：进程的调度优先级</li>
+<li>NI：进程的nice值，负值表示高优先级，正值表示低优先级</li>
+<li>VIRT：进程使用的虚拟内存总量，VIRT=SWAP+RES</li>
+<li>RES：驻留内存大小。驻留内存是进程使用的、未被交换的物理内存大小。</li>
+<li>SHR：共享内存大小。</li>
+<li>S：进程状态。</li>
+<li>%CPU：从上次更新到现在的CPU时间占用率。</li>
+<li>%MEM：进程使用的物理内存百分比。</li>
+<li>TIME+：进程使用的CPU时间，精确到百分之一秒。</li>
+<li>COMMAND：运行进程所使用的命令。命令名/命令行</li>
+</ul>
+<h3 id="内存和CPU使用情况"><a href="#内存和CPU使用情况" class="headerlink" title="内存和CPU使用情况"></a>内存和CPU使用情况</h3><p><code>vmstat</code>命令也可以用来监控Linux系统内存及CPU的使用情况，且可以指定采样周期及采用次数。</p>
+<p>例如使用<code>vmstat 1 5</code>每秒采样一次，共计5次。</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/vmstat.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>Procs（进程）</p>
+<ul>
+<li>r：等待运行的进程数</li>
+<li>b：处在非中断睡眠状态的进程数</li>
+</ul>
+<p>Memory（内存）</p>
+<ul>
+<li>swpd：虚拟内存使用情况</li>
+<li>free：空闲内存</li>
+<li>buff：用作缓冲区的内存大小</li>
+<li>cache：用作缓存的内存大小</li>
+</ul>
+<p>Swap</p>
+<ul>
+<li>si：每秒从磁盘交换区交换到内存的交换页</li>
+<li>so：每秒从内存交换到磁盘交换区的交换页</li>
+</ul>
+<p>IO</p>
+<ul>
+<li>bi：每秒读取的块数</li>
+<li>bo：每秒写入的块数</li>
+</ul>
+<p>System</p>
+<ul>
+<li>in：每秒中断数，包括时钟中断</li>
+<li>cs：每秒上下文切换数</li>
+</ul>
+<p>CPU</p>
+<ul>
+<li>us：用户空间CPU占用率</li>
+<li>sy：内核空间CPU占用率</li>
+<li>id：CPU空闲占用率</li>
+<li>wa：等待输入输出的CPU占用率，也就是等待IO的CPU占用率</li>
+</ul>
+<h3 id="IO使用情况"><a href="#IO使用情况" class="headerlink" title="IO使用情况"></a>IO使用情况</h3><p><code>iostat</code>命令将对系统的磁盘操作活动进行监视。它的特点是汇报磁盘活动统计情况，同时也会汇报出CPU使用情况。</p>
+<p>同样的，<code>iostat</code>命令也可以指定采样周期及采用次数。以下例子采用了每秒采样一次，共计3次。</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/iostat.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>以上输出信息显示了CPU的使用概况及磁盘IO的信息。</p>
+<p>CPU的属性值说明如下：</p>
+<ul>
+<li>%user：用户空间的CPU占用率</li>
+<li>%nice：改变过优先级的用户进程CPU占用率</li>
+<li>%system：内核空间的CPU占用率</li>
+<li>%iowait：等待输入输出的CPU占用率，也就是等待IO的CPU占用率</li>
+<li>%idle：CPU空闲的占用率</li>
+</ul>
+<p>磁盘IO属性值说明如下：</p>
+<ul>
+<li>tps：该设备每秒的传输次数</li>
+<li>kB_read/s：每秒从设备读取的数据量</li>
+<li>kB_wrtn/s：每秒向设备写入的数据量</li>
+<li>kB_read：  读取的总数据量</li>
+<li>kB_wrtn：写入的总数据量</li>
+</ul>
+<h2 id="Java程序性能监控"><a href="#Java程序性能监控" class="headerlink" title="Java程序性能监控"></a>Java程序性能监控</h2><p>在JDK开发包中提供了一些的辅助工具，这些辅助工具可以帮助我们更好的去解决Java应用程序中出现的问题，在JDK安装目录下的bin目录中可以看到这些辅助工具。</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/jdk-bin.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<h3 id="查看Java进程"><a href="#查看Java进程" class="headerlink" title="查看Java进程"></a>查看Java进程</h3><p><code>jps</code>命令与 linux 的 ps 命令有些类似，但是<code>jps</code>命令只会列出系统中的 Java 应用程序。 通过 <code>jps</code> 命令可以方便地查看 Java 进程的启动类、传入参数和 Java 虚拟机参数等信息。</p>
+<p>如果直接运行<code>jps</code>命令，那么可以列出Java程序的进程ID及Main函数短名称。</p>
+<p><code>jps</code>命令的参数选项如下：</p>
+<ul>
+<li>-q：只输出进程 ID</li>
+<li>-m：输出传入 main 方法的参数</li>
+<li>-l：输出完全的包名，应用主类名，jar的完全路径名</li>
+<li>-v：输出jvm参数</li>
+</ul>
+<h3 id="查看堆内存使用情况"><a href="#查看堆内存使用情况" class="headerlink" title="查看堆内存使用情况"></a>查看堆内存使用情况</h3><p><code>jstat</code>命令可以对Java应用程序的资源和性能进行实时的命令行的监控，包括了对堆大小和垃圾回收情况的监控。</p>
+<p><code>jstat</code>命令的参数选项如下：</p>
+<ul>
+<li>option：参数选项，这个参数的选项如下：<ul>
+<li>-class ：显示ClassLoad的相关信息；</li>
+<li>-compiler ：显示JIT编译的相关信息；</li>
+<li>-gc：显示和gc相关的堆信息；</li>
+<li>-gccapacity：显示各个代的容量以及使用情况；</li>
+<li>-gcmetacapacity：显示metaspace的大小</li>
+<li>-gcnew：显示新生代信息；</li>
+<li>-gcnewcapacity：显示新生代大小和使用情况；</li>
+<li>-gcold：显示老年代和永久代的信息；</li>
+<li>-gcoldcapacity ：显示老年代的大小；</li>
+<li>-gcutil：显示垃圾收集信息；</li>
+<li>-gccause：显示垃圾回收的相关信息，同时显示最后一次或当前正在发生的垃圾回收的原因；</li>
+</ul>
+</li>
+<li>-t：显示系统运行的时间</li>
+<li>-h：在周期性数据数据的时候，指定输出多少行以后输出一次表头信息</li>
+<li>vmid：指定进程的 pid</li>
+<li>interval：输出统计信息的周期，单位为毫秒</li>
+<li>count：输出统计信息的次数</li>
+</ul>
+<h4 id="查看class加载统计信息"><a href="#查看class加载统计信息" class="headerlink" title="查看class加载统计信息"></a>查看class加载统计信息</h4><p>以下示例输出进程PID为17397的Java程序类加载信息。</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/jstat-class.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>输出信息说明如下：</p>
+<ul>
+<li>Loaded：加载类的数量</li>
+<li>Bytes：加载类的大小</li>
+<li>Unloaded：卸载类的数量</li>
+<li>Bytes：卸载类的大小</li>
+<li>Time：消耗时间</li>
+</ul>
+<h4 id="查看JIT编译统计信息"><a href="#查看JIT编译统计信息" class="headerlink" title="查看JIT编译统计信息"></a>查看JIT编译统计信息</h4><figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/jstat-compiler.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>输出信息说明如下：</p>
+<ul>
+<li>Compiled：编译执行次数。</li>
+<li>Failed：编译失败次数</li>
+<li>Invalid：编译不可用次数</li>
+<li>Time：消耗时间</li>
+<li>FailedType：最后一次失败类型</li>
+<li>FailedMethod：最后一次失败的类名及方法</li>
+</ul>
+<h4 id="查看GC统计信息"><a href="#查看GC统计信息" class="headerlink" title="查看GC统计信息"></a>查看GC统计信息</h4><figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/jstat-gc.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>输出信息说明如下：</p>
+<ul>
+<li>S0C：第一个Survivor区的大小（KB）</li>
+<li>S1C：第二个Survivor区的大小（KB）</li>
+<li>S0U：第一个Survivor区的使用大小（KB）</li>
+<li>S1U：第二个Survivor区的使用大小（KB） </li>
+<li>EC：Eden区的大小（KB）</li>
+<li>EU：Eden区的使用大小（KB）</li>
+<li>OC：老年代大小 （KB）</li>
+<li>OU：老年代使用大小 （KB）</li>
+<li>MC：方法区大小（KB）</li>
+<li>MU：方法区使用大小（KB）</li>
+<li>CCSC：压缩类空间大小（KB）</li>
+<li>CCSU：压缩类空间使用大小（KB）</li>
+<li>YGC：年轻代垃圾回收次数</li>
+<li>YGCT：年轻代垃圾回收消耗时间</li>
+<li>FGC：Full GC次数</li>
+<li>FGCT：Full GC消耗时间</li>
+<li>GCT：垃圾回收消耗总时间</li>
+</ul>
+<h3 id="导出堆信息及分析"><a href="#导出堆信息及分析" class="headerlink" title="导出堆信息及分析"></a>导出堆信息及分析</h3><p>通过<code>jstat</code>命令可以对堆的内存进行统计分析，而<code>jmap</code>命令有更多功能，例如查看内存使用情况的汇总、对象实例的统计信息，导出堆的信息等等。</p>
+<p><code>jmap</code>中一个比较重要的功能就是将当前的堆信息快照保存到文件中，如下图：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/jmap-dump.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>将堆信息的快照导出后，可以使用各种工具对该文件进行分析，例如<code>jhat</code>命令工具或其他工具等等。</p>
+<p>使用<code>jhat</code>命令可以用于分析导出的堆信息文件内容。</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/jhart.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>分析完成后，可以使用浏览器访问服务器的7000端口展示其分析结果，结果如下图所示：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/jhat-7000.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>该页面中显示了所有类信息，所有类的实例信息，点击链接进入后可以查看选中类的超类，类加载器及该类的实例信息等等信息。且在页面底部可以使用OQL进行查询。</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/jhat.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/jhat-oql.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<h3 id="可视化性能监控工具"><a href="#可视化性能监控工具" class="headerlink" title="可视化性能监控工具"></a>可视化性能监控工具</h3><p>VisualVM工具能够监控线程，内存情况，查看方法的CPU时间和内存中的对象，已被GC的对象，查看分配的堆栈信息等等，是一个功能强大的可视化监控工具，且它的使用非常简单，可以完全替代其他JDK自带辅助工具的功能。</p>
+<p>在JDK安装目录中的bin目录下可以直接启动VisualVM工具。</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/visualvm.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>我们可以使用VisualVM工具连接本地Java程序或通过远程JMX连接Java程序。</p>
+<p>VisualVM工具的主界面如下：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/visualvm-index.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>连接到本地进程后，可以查看进程中的JVM参数信息及版本信息：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/visualvm-jvm.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>以及查看CPU、堆、类和线程的统计信息：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/visualvm-s.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>以及查看线程信息：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/visualvm-thard.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>并且点击线程Dump按钮后可以将线程信息导出：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/visualvm-thard-dump.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>并且可以使用抽样器对程序中的方法进行监控，有CPU和内存两个抽样器，通过CPU抽样器可以看出CPU中最消耗CPU资源的方法，通过内存抽样器可以动态的显示各个实例数据的大小：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/jvm/visualvm-cpu.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+        </div>
+
+        <blockquote class="post-copyright">
+    
+    <div class="content">
+        
+
+        
+        以上便是本篇博客的所有内容，感谢阅读，如有疑惑可以留下你的评论，谢谢！<br> 本篇文章地址：<a href="/jvm/jvm.html" target="_blank" rel="external">https://jinjinz.top/jvm/jvm.html</a>
+        
+    </div>
+    
+    <footer>
+        <a href="https://jinjinz.top">
+            <img src="/img/avatar.png" alt="Jin Jin">
+            Jin Jin
+        </a>
+    </footer>
+</blockquote>
+
+        
+<div class="page-reward">
+    <a id="rewardBtn" href="javascript:;" class="page-reward-btn waves-effect waves-circle waves-light">赏</a>
+</div>
+
+
+
+        <div class="post-footer">
+            
+	<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/JVM/">JVM</a></li></ul>
+
+
+            
+<div class="page-share-wrap">
+    
+
+<div class="page-share" id="pageShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=https://jinjinz.top/jvm/jvm.html&title=《Java虚拟机的基本认识及调优》 — JinJin's Blog&pic=https://jinjinz.top/img/avatar.png" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=https://jinjinz.top/jvm/jvm.html&title=《Java虚拟机的基本认识及调优》 — JinJin's Blog&source=分享Java相关技术,MySQL-锁-MVCC,设计模式,Spring源码分析" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=https://jinjinz.top/jvm/jvm.html" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《Java虚拟机的基本认识及调优》 — JinJin's Blog&url=https://jinjinz.top/jvm/jvm.html&via=https://jinjinz.top" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=https://jinjinz.top/jvm/jvm.html" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+
+    <a href="javascript:;" id="shareFab" class="page-share-fab waves-effect waves-circle">
+        <i class="icon icon-share-alt icon-lg"></i>
+    </a>
+</div>
+
+
+
+        </div>
+    </div>
+
+    
+<nav class="post-nav flex-row flex-justify-between">
+  
+    <div class="waves-block waves-effect prev">
+      <a href="/concurrent/reentrantLock.html" id="post-prev" class="post-nav-link">
+        <div class="tips"><i class="icon icon-angle-left icon-lg icon-pr"></i> Prev</div>
+        <h4 class="title">重入锁-ReentrantLock底层源码分析</h4>
+      </a>
+    </div>
+  
+
+  
+    <div class="waves-block waves-effect next">
+      <a href="/spring/spring-code.html" id="post-next" class="post-nav-link">
+        <div class="tips">Next <i class="icon icon-angle-right icon-lg icon-pl"></i></div>
+        <h4 class="title">自己动手写一个Spring框架</h4>
+      </a>
+    </div>
+  
+</nav>
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<section class="comments" id="comments">
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+        var id = location.pathname
+        if (location.pathname.length > 50) {
+          id = location.pathname.replace(/\/\d+\/\d+\/\d+\//, '').replace('/', '').substring(0, 50)
+        }
+        const gitalk = new Gitalk({
+          clientID: '217672eb040280538293',
+          clientSecret: '5a950867142dbcfd9fdc3de4491455bd3651c1a8',
+          repo: 'jinzzzzz.github.io',
+          owner: 'jinzzzzz',
+          admin: ['jinzzzzz'],
+          id: id,      // Ensure uniqueness and length less than 50
+          title: document.title.split('|')[0],
+          distractionFreeMode: false  // Facebook-like distraction free mode
+        })
+
+        gitalk.render('gitalk-container')
+    </script>
+</section>
+
+
+
+
+</article>
+
+<div id="reward" class="page-modal reward-lay">
+    <a class="close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <h3 class="reward-title">
+        <i class="icon icon-quote-left"></i>
+        谢谢大爷~
+        <i class="icon icon-quote-right"></i>
+    </h3>
+    <div class="reward-content">
+        
+        <div class="reward-code">
+            <img id="rewardCode" src="/img/alipay.png" alt="打赏二维码">
+        </div>
+        
+    </div>
+</div>
+
+
+
+</div>
+
+        <footer class="footer">
+    <div class="top">
+        
+<p>
+    <span id="busuanzi_container_site_uv" style="display:none">
+        站点总访客数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span id="busuanzi_container_site_pv" style="display:none">
+        站点总访问量：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</p>
+
+
+        <p>
+            
+                <span><a href="/atom.xml" target="_blank" class="rss" title="rss"><i class="icon icon-lg icon-rss"></i></a></span>
+            
+            <span>博客内容遵循 <a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh">知识共享 署名 - 非商业性 - 相同方式共享 4.0 国际协议</a></span>
+        </p>
+    </div>
+    <div class="bottom">
+        <p><span>Jin Jin &copy; 2019</span>
+            <span>
+                
+                Power by <a href="http://hexo.io/" target="_blank">Hexo</a> Theme <a href="https://github.com/yscoder/hexo-theme-indigo" target="_blank">indigo</a>
+            </span>
+        </p>
+    </div>
+</footer>
+
+    </main>
+    <div class="mask" id="mask"></div>
+<a href="javascript:;" id="gotop" class="waves-effect waves-circle waves-light"><span class="icon icon-lg icon-chevron-up"></span></a>
+
+
+
+<div class="global-share" id="globalShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=https://jinjinz.top/jvm/jvm.html&title=《Java虚拟机的基本认识及调优》 — JinJin's Blog&pic=https://jinjinz.top/img/avatar.png" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=https://jinjinz.top/jvm/jvm.html&title=《Java虚拟机的基本认识及调优》 — JinJin's Blog&source=分享Java相关技术,MySQL-锁-MVCC,设计模式,Spring源码分析" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=https://jinjinz.top/jvm/jvm.html" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《Java虚拟机的基本认识及调优》 — JinJin's Blog&url=https://jinjinz.top/jvm/jvm.html&via=https://jinjinz.top" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=https://jinjinz.top/jvm/jvm.html" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+<div class="page-modal wx-share" id="wxShare">
+    <a class="close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAK4AAACuCAAAAACKZ2kyAAABzUlEQVR42u3aSWoDMRQFQN//0p1NFoHg9nua0oTSymBZKnkh9IfXKx7Xr5HMnJkzNXBxcae51+34Oed+y3z7d7+9N+Di4p7nvls0wb07TILLDbi4uE/m3m+cP4xwcXH/B3fmqhp7HuHi4v4tNwl+2pTH/RW2PVbDxcWd4OaJjH2ft+R3cXFxh7jX0GiPN7/j92q4uLhHuO2lkz9Z8vCpTqfi4uJu5ubhR5vmyAOhIrGCi4t7hJs/UMa2yQ8wlQrBxcVdyp1pkshLsO1VVT9xcHFxl3JXPVby8kmSCy3Sqbi4uBu4bdG0bcsY+zs+xGq4uLibuW0RtKWPXZHRswYXF3cbd6yJKse1ZZUP83FxcY9zW1ybl23/lCj4wcXF3cadb48YO1K9Ji4u7hFuUkBNqpx5yWTmUYWLi3uGu6rI2qZf2xaQxTVhXFzcIHRoUx4zIdCCNXFxcTdzr3LkJdi2Aatuw8LFxd3GHbtc8gdQXj6ZuUxxcXF3cJPLa6bxIk+XFMEPLi7uEW6emMgTrG3SJDkGLi7u07hjD5qxxGuUScXFxX0Aty2jJuvX3+Li4h7kzgc/Y6nVeiYuLu4RbtsMMdaKkZRSlhVrcXFxx7lf5NUGHGbV1g4AAAAASUVORK5CYII=" alt="微信分享二维码">
+</div>
+
+
+
+
+    <script src="//cdn.bootcss.com/node-waves/0.7.4/waves.min.js"></script>
+<script>
+var BLOG = { ROOT: '/', SHARE: true, REWARD: true };
+
+
+</script>
+
+<script src="/js/main.min.js?v=1.7.2"></script>
+
+
+<div class="search-panel" id="search-panel">
+    <ul class="search-result" id="search-result"></ul>
+</div>
+<template id="search-tpl">
+<li class="item">
+    <a href="{path}" class="waves-block waves-effect">
+        <div class="title ellipsis" title="{title}">{title}</div>
+        <div class="flex-row flex-middle">
+            <div class="tags ellipsis">
+                {tags}
+            </div>
+            <time class="flex-col time">{date}</time>
+        </div>
+    </a>
+</li>
+</template>
+
+<script src="/js/search.min.js?v=1.7.2" async></script>
+
+
+
+
+
+
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+</body>
+</html>

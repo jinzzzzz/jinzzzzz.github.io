@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html>
+<head><meta name="generator" content="Hexo 3.8.0">
+    
+
+    
+
+    
+
+
+
+    <meta charset="utf-8">
+    
+    
+    
+    <link rel="canonical" href="true/mysql/mysql-">
+    
+    
+    <title>MySQL中的索引认识及优化 | JinJin&#39;s Blog | 欲渡黄河冰塞川，将登太行雪满山</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    
+    <meta name="theme-color" content="#3F51B5">
+    
+    
+    <meta name="keywords" content="MySQL">
+    <meta name="description" content="什么是索引？ 索引是用于快速查询数据的数据结构。通过索引去查找我们需要的数据，在数据量比较大时，性能会大大提升；但是错误的创建索引并不会提升查询的效率，所以我们需要正确的认识索引以及用正确的形式创建索引。 索引结构B树和B+树是目前的数据库应用中最常用、有效的索引结构。因为数据库中的数据一般保存在磁盘中，而IO操作是一个极其消耗时间的操作，所以我们需要通过B树或B+树进行优化，减少IO次数来提高效">
+<meta name="keywords" content="MySQL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL中的索引认识及优化">
+<meta property="og:url" content="https://jinjinz.top/mysql/mysql-index.html">
+<meta property="og:site_name" content="JinJin&#39;s Blog">
+<meta property="og:description" content="什么是索引？ 索引是用于快速查询数据的数据结构。通过索引去查找我们需要的数据，在数据量比较大时，性能会大大提升；但是错误的创建索引并不会提升查询的效率，所以我们需要正确的认识索引以及用正确的形式创建索引。 索引结构B树和B+树是目前的数据库应用中最常用、有效的索引结构。因为数据库中的数据一般保存在磁盘中，而IO操作是一个极其消耗时间的操作，所以我们需要通过B树或B+树进行优化，减少IO次数来提高效">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/B-Tree.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/B+-Tree.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/Innodb-index.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/Innodb-name.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/multiple-column-indexes.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/explain-db.png">
+<meta property="og:updated_time" content="2019-08-02T09:55:52.221Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MySQL中的索引认识及优化">
+<meta name="twitter:description" content="什么是索引？ 索引是用于快速查询数据的数据结构。通过索引去查找我们需要的数据，在数据量比较大时，性能会大大提升；但是错误的创建索引并不会提升查询的效率，所以我们需要正确的认识索引以及用正确的形式创建索引。 索引结构B树和B+树是目前的数据库应用中最常用、有效的索引结构。因为数据库中的数据一般保存在磁盘中，而IO操作是一个极其消耗时间的操作，所以我们需要通过B树或B+树进行优化，减少IO次数来提高效">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/B-Tree.png">
+    
+        <link rel="alternate" type="application/atom+xml" title="JinJin&#39;s Blog" href="/atom.xml">
+    
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/css/style.css?v=1.7.2">
+    <script>window.lazyScripts=[]</script>
+
+    <!-- custom head -->
+    
+
+</head>
+
+<body>
+    <div id="loading" class="active"></div>
+
+    <aside id="menu" class="hide">
+  <div class="inner flex-row-vertical">
+    <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menu-off">
+        <i class="icon icon-lg icon-close"></i>
+    </a>
+    <div class="brand-wrap" style="background-image:url(/img/brand.jpg)">
+      <div class="brand">
+        <a href="/" class="avatar waves-effect waves-circle waves-light">
+          <img src="/img/avatar.png">
+        </a>
+        <hgroup class="introduce">
+          <h5 class="nickname">Jin Jin</h5>
+          <a href="mailto:jinmailon@gmail.com" title="jinmailon@gmail.com" class="mail">jinmailon@gmail.com</a>
+        </hgroup>
+      </div>
+    </div>
+    <div class="scroll-wrap flex-col">
+      <ul class="nav">
+        
+            <li class="waves-block waves-effect">
+              <a href="/">
+                <i class="icon icon-lg icon-home"></i>
+                home
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/archives">
+                <i class="icon icon-lg icon-archives"></i>
+                Archives
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="/tags">
+                <i class="icon icon-lg icon-tags"></i>
+                Tags
+              </a>
+            </li>
+        
+            <li class="waves-block waves-effect">
+              <a href="https://github.com/jinzzzzz" target="_blank">
+                <i class="icon icon-lg icon-github"></i>
+                Github
+              </a>
+            </li>
+        
+      </ul>
+    </div>
+  </div>
+</aside>
+
+    <main id="main">
+        <header class="top-header" id="header">
+    <div class="flex-row">
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light on" id="menu-toggle">
+          <i class="icon icon-lg icon-navicon"></i>
+        </a>
+        <div class="flex-col header-title ellipsis">MySQL中的索引认识及优化</div>
+        
+        <div class="search-wrap" id="search-wrap">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="back">
+                <i class="icon icon-lg icon-chevron-left"></i>
+            </a>
+            <input type="text" id="key" class="search-input" autocomplete="off" placeholder="输入感兴趣的关键字">
+            <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="search">
+                <i class="icon icon-lg icon-search"></i>
+            </a>
+        </div>
+        
+        
+        <a href="javascript:;" class="header-icon waves-effect waves-circle waves-light" id="menuShare">
+            <i class="icon icon-lg icon-share-alt"></i>
+        </a>
+        
+    </div>
+</header>
+<header class="content-header post-header">
+
+    <div class="container fade-scale">
+        <h1 class="title">MySQL中的索引认识及优化</h1>
+        <h5 class="subtitle">
+            
+                <time datetime="2019-03-06T08:48:55.000Z" itemprop="datePublished" class="page-time">
+  2019-03-06
+</time>
+
+
+	<ul class="article-category-list"><li class="article-category-list-item"><a class="article-category-list-link" href="/categories/mysql/">mysql</a></li></ul>
+
+            
+        </h5>
+    </div>
+
+    
+
+
+</header>
+
+
+<div class="container body-wrap">
+    
+    <aside class="post-widget">
+        <nav class="post-toc-wrap post-toc-shrink" id="post-toc">
+            <h4>目录</h4>
+            <ol class="post-toc"><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#索引结构"><span class="post-toc-text">索引结构</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#B树"><span class="post-toc-text">B树</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#B-树"><span class="post-toc-text">B+树</span></a></li></ol></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#索引实现"><span class="post-toc-text">索引实现</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#Innodb-存储引擎"><span class="post-toc-text">Innodb 存储引擎</span></a></li></ol></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#索引使用策略"><span class="post-toc-text">索引使用策略</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#高选择性"><span class="post-toc-text">高选择性</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#条件匹配"><span class="post-toc-text">条件匹配</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#联合索引"><span class="post-toc-text">联合索引</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#覆盖索引"><span class="post-toc-text">覆盖索引</span></a></li></ol></li><li class="post-toc-item post-toc-level-2"><a class="post-toc-link" href="#查询执行计划"><span class="post-toc-text">查询执行计划</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#输出格式"><span class="post-toc-text">输出格式</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#查询类型"><span class="post-toc-text">查询类型</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#连接类型"><span class="post-toc-text">连接类型</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#额外信息"><span class="post-toc-text">额外信息</span></a></li></ol></li></ol>
+        </nav>
+    </aside>
+
+
+<article id="post-mysql-index" class="post-article article-type-post fade" itemprop="blogPost">
+
+    <div class="post-card">
+        <h1 class="post-card-title">MySQL中的索引认识及优化</h1>
+        <div class="post-meta">
+            <time class="post-time" title="2019-03-06 16:48:55" datetime="2019-03-06T08:48:55.000Z" itemprop="datePublished">2019-03-06</time>
+
+            
+
+
+            
+<span id="busuanzi_container_page_pv" title="文章总阅读量" style="display:none">
+    <i class="icon icon-eye icon-pr"></i><span id="busuanzi_value_page_pv"></span>
+</span>
+
+
+        </div>
+        <div class="post-content" id="post-content" itemprop="postContent">
+            <p><strong>什么是索引？</strong></p>
+<p>索引是用于快速查询数据的<strong>数据结构</strong>。通过索引去查找我们需要的数据，在数据量比较大时，性能会大大提升；但是错误的创建索引并不会提升查询的效率，所以我们需要正确的认识索引以及用正确的形式创建索引。</p>
+<h2 id="索引结构"><a href="#索引结构" class="headerlink" title="索引结构"></a>索引结构</h2><p>B树和B+树是目前的数据库应用中最常用、有效的索引结构。因为数据库中的数据一般保存在磁盘中，而IO操作是一个极其消耗时间的操作，所以我们需要通过B树或B+树进行优化，减少IO次数来提高效率。</p>
+<p>在数据库中，可以根据B类树的特点，构建一个多阶的B树或B+树，其高度一般在2到3层，这样的话，对于查找某一个节点中关键字的值时，最多只需要2到3次IO。</p>
+<h3 id="B树"><a href="#B树" class="headerlink" title="B树"></a>B树</h3><p>B树的添加删除效果可以在 <a href="https://www.cs.usfca.edu/~galles/visualization/BTree.html" target="_blank" rel="noopener">B树的演示网站</a> 上查看</p>
+<p>B树是一种平衡树数据结构，它的查找效率很高，所以通常会作为数据库的索引结构使用，它进行搜索的时间复杂度是 O(log <em>n</em>) 。</p>
+<p>在一个 m 阶的B树中，它可以具有 m-1 数量的 key ，阶数表示了一个节点最多拥有的子节点数量。B树的每个内部节点包含的 key 用作分隔其子树的分离值。</p>
+<p>下图是 key 值为 1 到 14 组成的一个3阶的B树：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/B-Tree.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>上图中的数字即为节点中的 key ，每个key对应一个data，在mysql中，data就表示了这个 key 对应的数据在硬盘上的地址。</p>
+<h3 id="B-树"><a href="#B-树" class="headerlink" title="B+树"></a>B+树</h3><p>B+树的添加删除效果可以在 <a href="https://www.cs.usfca.edu/~galles/visualization/BPlusTree.html" target="_blank" rel="noopener">B+树的演示网站</a> 上查看</p>
+<p>B+树是B树的一个变种，在B+树中，只有叶子节点保存了数据信息，其他节点仅包含了key信息，且叶子节点中包含了指向下一个叶子节点的指针来加速顺序访问。</p>
+<p>下图是 key 值为 1 到 14 组成的一个4阶B+树：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/B+-Tree.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>一般索引也是存储在磁盘上的，所以索引的查找过程也会产生磁盘的IO消耗；而索引要尽量减少查找过程中磁盘IO的存取次数。</p>
+<p>因为B+树的数据信息只存储在叶子节点，所以同样大小的磁盘页与B树相比存储的关键字变得更多，相应的也会减少IO次数。一般而言，每个节点会设置为一页大小，也就是一次IO读取，所以使用关键字查找时，B树的IO次数会多于B+树。</p>
+<p>并且B树的查找性能并不稳定，B树需要查找的数据可能在根节点，也可能在叶子节点；而B+树的查询必须查找到叶子节点，所以每次的查找都是稳定的，且因为叶子节点的数据有指向下一个叶子节点的指针，所以在范围查询时只需要遍历叶子节点即可。</p>
+<p>而对于关系型数据库来讲，范围查询的使用也是比较关键的，所以MySQL采用了B+树作为索引结构，而且在B+树中，查询的性能更加稳定，因为每次查询都必须到叶子节点。</p>
+<h2 id="索引实现"><a href="#索引实现" class="headerlink" title="索引实现"></a>索引实现</h2><p>索引的实现因存储引擎的不同，实现的方式也不同，下面只介绍B+树在最常用的 Innodb 引擎中的体现方式。</p>
+<h3 id="Innodb-存储引擎"><a href="#Innodb-存储引擎" class="headerlink" title="Innodb 存储引擎"></a>Innodb 存储引擎</h3><p>在innodb的表中，有两种索引类型，聚簇索引和辅助索引，两种索引的内部实现都是B+树，在聚簇索引中，聚簇索引会以表的主键作为索引的键，且数据行信息保存在叶子节点中。</p>
+<p>假设我们现在有主键为id的一张用户表，数据如下：</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>name</th>
+<th>age</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>101</td>
+<td>zhangsan</td>
+<td>18</td>
+</tr>
+<tr>
+<td>102</td>
+<td>lisi</td>
+<td>20</td>
+</tr>
+<tr>
+<td>103</td>
+<td>wangwu</td>
+<td>22</td>
+</tr>
+<tr>
+<td>104</td>
+<td>zhaoliu</td>
+<td>21</td>
+</tr>
+</tbody>
+</table>
+<p>那么使用主键列id构建的聚簇索引如下：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/Innodb-index.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>除了聚簇索引之外的索引被称为辅助索引，辅助索引的键为其指定的列，在索引中的叶子节点数据为该行记录的主键值，根据此主键值再去聚簇索引中根据主键查询到对应的行。</p>
+<p>使用 name 列构建的辅助索引如下：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/Innodb-name.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>辅助索引的存在并不会影响聚簇索引，一个表中虽然只能有一个聚簇索引，但对辅助索引没有限制；当通过辅助索引来查询数据时，会先通过辅助索引的叶子节点获取指向聚簇索引的主键，然后通过聚簇索引来找到一个完整的行记录。</p>
+<p>也就是说，如果我们需要在上例数据中，通过name索引查找 “lisi” 的行记录，那么需要先对辅助索引遍历两次找到指定的主键，然后根据主键再去聚簇索引中进行2次查找，因此一共需要进行4次逻辑IO操作l来访问最终的数据页。</p>
+<p>在字符串列中，辅助索引也可以创建仅使用列的前几个字符的索引，这样创建的索引可以使索引文件更小，在创建辅助索引时可以指定索引的前缀长度。</p>
+<h2 id="索引使用策略"><a href="#索引使用策略" class="headerlink" title="索引使用策略"></a>索引使用策略</h2><p>如果我们在表中没有创建索引，MySQL就必须从数据的第一行开始进行全表的扫描以查找到相关记录。表的数据越大，查找的成本也就越高；如果表中有相关的索引，那么MySQL就可以快速的定位到需要查找的数据，而不需要进行全表的扫描。</p>
+<p>但是索引也不是在所有的查询条件下出现的列都需要添加，对于添加索引而言，还是有几个需要注意的关键点的。</p>
+<h3 id="高选择性"><a href="#高选择性" class="headerlink" title="高选择性"></a>高选择性</h3><p>使用索引的其中一个关键点就是，索引对于列的选择而言必须是具有高选择性的，例如对于性别字段，它的取值内容是固定的，或者说取值范围很小，即大部分是重复的数据，所以这种数据内容是低选择性的。</p>
+<p>对于索引而言，如果需要查询的值在数据中能匹配大量的行数据，那么使用索引的效率是比较低下的；只有在索引匹配少量的数据时，索引才能高效的查询数据。</p>
+<p>相反，如果某个列的数据大部分不会重复，例如姓名字段，则使用B+树索引比较合适，因此，在对一个列建立索引时，需要考虑该列的选择性。</p>
+<p>索引选择性的计算公式是<strong>基数除以数据总行数</strong>，例如对于性别字段，假如表中有一万行数据，其中五千是男，五千是女，则基数为男和女，也就是 2/10000 ，最终计算出的选择性为 0.0002 ；而对于姓名字段，可能一万行数据中没有重复的，那基数就为 10000 /10000 ，选择性为 1，则从选择性方面而言，非常适合建立索引。</p>
+<p>当选择性越大，则建立的索引价值也就越大。</p>
+<h3 id="条件匹配"><a href="#条件匹配" class="headerlink" title="条件匹配"></a>条件匹配</h3><p>当在列上建立了索引后，在 where 条件中与索引中的列进行匹配，就可以加速查询，例如前面提到的用户表，如果建立了 name 列及 age 列的两个辅助索引，那么我们在条件查询中可以对添加了索引的列进行全值匹配、前缀匹配或者范围匹配。</p>
+<p>以下是 sql 查询语句的示例</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">user</span> <span class="keyword">where</span> <span class="keyword">name</span> = <span class="string">'zhangsan'</span> </span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">user</span> <span class="keyword">where</span> <span class="keyword">name</span> <span class="keyword">LIKE</span> <span class="string">'zha%'</span> </span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">user</span> <span class="keyword">where</span> age &gt; <span class="number">18</span> <span class="keyword">and</span> age &lt; <span class="number">22</span></span><br></pre></td></tr></table></figure>
+<h3 id="联合索引"><a href="#联合索引" class="headerlink" title="联合索引"></a>联合索引</h3><p>联合索引是指在多个列上建立索引，辅助索引中，不仅仅只能用一列创建索引，还可以创建多列的联合索引，联合索引中最多可以包含16列。</p>
+<p>对于多列的索引，我们在条件查询中可以用到第一列，前两列及前三列等等，只要我们在条件查询中正确的指定联合索引中的列，则联合索引就可以加速查询。</p>
+<p>例如对于用户表，我们建立了一个index(name,age)的联合索引，那么就可以查询 name 列和 age 列的组合条件，也可以仅指定 name 列的查询。</p>
+<p>联合索引的内部结构其实还是B+树，但是其关键字并不是单独的一列的值了，而是多个列组合的值，例如对于上例中的用户表新建一个联合索引 <code>index(name,age)</code>，那么其内部结构如下：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/multiple-column-indexes.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>因此，<code>index(name,age)</code>这个联合索引适用于如下 sql 查询：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">user</span> <span class="keyword">where</span> <span class="keyword">name</span> = <span class="string">'zhangsan'</span></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">user</span> <span class="keyword">where</span> <span class="keyword">name</span> = <span class="string">'zhangsan'</span> <span class="keyword">and</span> age = <span class="number">18</span></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">user</span> <span class="keyword">where</span> <span class="keyword">name</span> = <span class="string">'zhangsan'</span> <span class="keyword">and</span> age &gt; <span class="number">18</span> <span class="keyword">and</span> age &lt; <span class="number">22</span></span><br></pre></td></tr></table></figure>
+<p>但是，这个联合索引并不能用于以下的 sql 查询</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">user</span> <span class="keyword">where</span> age = <span class="number">18</span></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">user</span> <span class="keyword">where</span> <span class="keyword">name</span> = <span class="string">'zhangsan'</span> <span class="keyword">or</span> age = <span class="number">18</span></span><br></pre></td></tr></table></figure>
+<p>所以，在一个查询中如果想要使用一个联合索引来加速查询，在条件匹配中必须符合这个联合索引的<strong>最左前缀</strong>，例如我们创建了一个 <code>index(column1,column2,column3)</code> 的3列联合索引，只要我们在查询中单独用到了第一列column1，或者column1和column2以及column1，column2，column3都能让查询使用这个联合索引来加速查询。</p>
+<p>例如以下的 sql 查询，只有前两个 sql 查询会使用到  <code>index(column1,column2,column3)</code> 的联合索引，虽然第三和第四个 sql 查询中用到了索引中包含的列，但是不是索引中的<strong>最左前缀</strong>，所以无法使用该索引来完成查找。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> table_name <span class="keyword">where</span> column1 = <span class="string">'value'</span></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> table_name <span class="keyword">where</span> column1 = <span class="string">'value'</span> <span class="keyword">and</span> column2 = <span class="string">'value'</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> table_name <span class="keyword">where</span> column2 = <span class="string">'value'</span></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> table_name <span class="keyword">where</span> column2 = <span class="string">'value'</span> <span class="keyword">and</span> column3 = <span class="string">'value'</span></span><br></pre></td></tr></table></figure>
+<p>并且在联合索引中，对于第二列或之后的列，可以进行排序，例如对于<code>index(name,age)</code> 这个联合索引，我们可以获取重名的用户，并且按照年龄排序，这时使用联合索引就可以直接获取到已经排序过的数据，因为其本身在叶子节点中就已经排序了，例如下面这个 sql 查询：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">user</span> <span class="keyword">where</span> <span class="keyword">name</span> = <span class="string">'zhangsan'</span> <span class="keyword">order</span> <span class="keyword">by</span> age</span><br></pre></td></tr></table></figure>
+<h3 id="覆盖索引"><a href="#覆盖索引" class="headerlink" title="覆盖索引"></a>覆盖索引</h3><p>如果查询中仅需要获得在索引中的列，那么可以直接从索引中获得数据，而不用再去查找数据行。</p>
+<p>例如以下 sql 查询：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">name</span> <span class="keyword">from</span> <span class="keyword">user</span> <span class="keyword">where</span> <span class="keyword">name</span> <span class="keyword">LIKE</span> <span class="string">'zha%'</span></span><br></pre></td></tr></table></figure>
+<p>在这个 sql 查询语句返回的结果中，可以不用去获取数据行的内容，因为在 name 列的辅助索引中已经包含了该列的值，则可以从该辅助索引中直接返回所匹配的关键字即可，不需要在根据主键去聚簇索引中获取数据行，对于联合索引来讲，也是一样的效果。</p>
+<h2 id="查询执行计划"><a href="#查询执行计划" class="headerlink" title="查询执行计划"></a>查询执行计划</h2><p>MySQL中的 <code>explain</code>命令可以查看sql语句的执行计划，而通过执行计划我们可以了解到这条sql的查询方式、索引的使用情况、需要扫描的数据量、是否需要临时表及排序等操作信息。</p>
+<p>我们需要分析执行计划，来进行有必要的优化，在sql语句前加上<code>explain</code>即可查看该sql语句的执行计划。</p>
+<h3 id="输出格式"><a href="#输出格式" class="headerlink" title="输出格式"></a>输出格式</h3><p>以<code>explain select * from db where user = &#39;test&#39;</code>查询为例，结果如下：</p>
+<figure class="image-bubble">
+                <div class="img-lightbox">
+                    <div class="overlay"></div>
+                    <img src="https://raw.githubusercontent.com/jinzzzzz/image/master/blog/mysql/explain-db.png" alt title>
+                </div>
+                <div class="image-caption"></div>
+            </figure>
+<p>各列含义如下：</p>
+<table>
+<thead>
+<tr>
+<th>列名</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>查询标识符</td>
+</tr>
+<tr>
+<td>select_type</td>
+<td>查询类型</td>
+</tr>
+<tr>
+<td>table</td>
+<td>输出行的表</td>
+</tr>
+<tr>
+<td>partitions</td>
+<td>匹配的分区</td>
+</tr>
+<tr>
+<td>type</td>
+<td>连接类型</td>
+</tr>
+<tr>
+<td>possible_keys</td>
+<td>可以选择的索引，但实际选择的索引由key字段决定</td>
+</tr>
+<tr>
+<td>key</td>
+<td>实际选择的索引</td>
+</tr>
+<tr>
+<td>key_len</td>
+<td>索引使用的字节数</td>
+</tr>
+<tr>
+<td>ref</td>
+<td>索引使用的列或常量</td>
+</tr>
+<tr>
+<td>rows</td>
+<td>预计需要检查的行数</td>
+</tr>
+<tr>
+<td>filtered</td>
+<td>按条件过滤的数据百分比</td>
+</tr>
+<tr>
+<td>Extra</td>
+<td>额外信息</td>
+</tr>
+</tbody>
+</table>
+<h3 id="查询类型"><a href="#查询类型" class="headerlink" title="查询类型"></a>查询类型</h3><p>下表显示了所有查询类型：</p>
+<table>
+<thead>
+<tr>
+<th>查询类型</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SIMPLE</td>
+<td>简单的select查询，查询中不包含union或子查询</td>
+</tr>
+<tr>
+<td>PRIMARY</td>
+<td>查询中包含子查询，表示这是最外层查询</td>
+</tr>
+<tr>
+<td>UNION</td>
+<td>union的第二个或之后的查询被标记为UNION</td>
+</tr>
+<tr>
+<td>DEPENDENT UNION</td>
+<td>依赖外部查询的union</td>
+</tr>
+<tr>
+<td>UNION RESULT</td>
+<td>union的结果。</td>
+</tr>
+<tr>
+<td>SUBQUERY</td>
+<td>子查询</td>
+</tr>
+<tr>
+<td>DEPENDENT SUBQUERY</td>
+<td>依赖外部查询的子查询</td>
+</tr>
+<tr>
+<td>DERIVED</td>
+<td>用于from的子查询</td>
+</tr>
+<tr>
+<td>DEPENDENT DERIVED</td>
+<td>依赖外部查询的用于from的子查询</td>
+</tr>
+</tbody>
+</table>
+<h3 id="连接类型"><a href="#连接类型" class="headerlink" title="连接类型"></a>连接类型</h3><p>连接类型type介绍了如何连接表，以下列表从最佳类型到最差类型列出了所有的连接类型：</p>
+<ul>
+<li><p>system</p>
+<p>表中只有一条数据，这是连接类型 const 的一个特例。</p>
+</li>
+<li><p>const</p>
+<p>表示通过主键或唯一索引查询，最多只返回一行数据。因为只有一行数据，如果在where列表中，mysql能将该查询转换为一个常量，const 查询速度非常快, 因为它只需要读取一次。</p>
+</li>
+<li><p>eq_ref</p>
+<p>对于每个来自于前面的表的结果，都只能从该表中匹配一行数据，连接的字段为主键或唯一索引。</p>
+<p>在以下<a href="https://dev.mysql.com/doc/refman/8.0/en/explain-output.html#explain-join-types" target="_blank" rel="noopener">官方文档</a>的示例中，可以使用eq_ref连接来处理ref_table表 ：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> ref_table,other_table </span><br><span class="line">	<span class="keyword">where</span> ref_table.key_column=other_table.column;</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> ref_table,other_table </span><br><span class="line">	<span class="keyword">where</span> ref_table.key_column_part1=other_table.column</span><br><span class="line">    <span class="keyword">and</span> ref_table.key_column_part2=<span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+<p>ref_table表中的key_column列添加了唯一索引。</p>
+</li>
+<li><p>ref</p>
+<p>对于每个来自于前面的表的结果，可以从该表中根据索引匹配几行数据，连接的字段具有非唯一索引或者使用了<code>最左前缀</code>规则的查询。</p>
+<p>在以下<a href="https://dev.mysql.com/doc/refman/8.0/en/explain-output.html#explain-join-types" target="_blank" rel="noopener">官方文档</a>的示例中，可以使用ref连接来处理ref_table表 ：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> ref_table <span class="keyword">where</span> key_column=expr;</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> ref_table,other_table</span><br><span class="line">  <span class="keyword">where</span> ref_table.key_column=other_table.column;</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> ref_table,other_table</span><br><span class="line">  <span class="keyword">where</span> ref_table.key_column_part1=other_table.column</span><br><span class="line">  <span class="keyword">AND</span> ref_table.key_column_part2=<span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+<p>ref_table表中的key_column列添加了非唯一索引或使用了<code>最左前缀</code>的规则进行查询。</p>
+</li>
+<li><p>ref_or_null</p>
+<p>该连接类型与ref类型相同，但是对包含NULL值的行进行额外搜索。</p>
+<p>在以下<a href="https://dev.mysql.com/doc/refman/8.0/en/explain-output.html#explain-join-types" target="_blank" rel="noopener">官方文档</a>的示例中，可以使用ref_or_null连接来处理ref_table表 ：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> ref_table</span><br><span class="line">  <span class="keyword">where</span> key_column=expr <span class="keyword">or</span> key_column <span class="keyword">is</span> <span class="literal">null</span>;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>index_merge</p>
+<p>该连接类型表示使用了索引合并优化方法。在这种情况下，<code>key</code>输出行中的列包含使用的索引列表，并且<code>key_len</code>包含所用索引的最长关键部分的列表。</p>
+</li>
+<li><p>unique_subquery</p>
+<p>在以下<a href="https://dev.mysql.com/doc/refman/8.0/en/explain-output.html#explain-join-types" target="_blank" rel="noopener">官方文档</a>的示例中，该类型替换了子查询的eq_ref类型</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">value in (<span class="keyword">select</span> primary_key <span class="keyword">from</span> single_table <span class="keyword">where</span> some_expr)</span><br></pre></td></tr></table></figure>
+<p>primary_key列必须是主键或唯一索引。</p>
+</li>
+<li><p>index_subquery</p>
+<p>该连接类型与unique_subquery类型相似，但它适用于子查询的查询结果列为非唯一索引的时候。</p>
+</li>
+<li><p>range</p>
+<p>只检索给定范围的行，使用一个索引来选择行。</p>
+<p>在以下<a href="https://dev.mysql.com/doc/refman/8.0/en/explain-output.html#explain-join-types" target="_blank" rel="noopener">官方文档</a>的示例中，可以使用range连接：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> tbl_name</span><br><span class="line">  <span class="keyword">where</span> key_column = <span class="number">10</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> tbl_name</span><br><span class="line">  <span class="keyword">where</span> key_column <span class="keyword">between</span> <span class="number">10</span> <span class="keyword">and</span> <span class="number">20</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> tbl_name</span><br><span class="line">  <span class="keyword">where</span> key_column <span class="keyword">IN</span> (<span class="number">10</span>,<span class="number">20</span>,<span class="number">30</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> tbl_name</span><br><span class="line">  <span class="keyword">where</span> key_part1 = <span class="number">10</span> <span class="keyword">and</span> key_part2 <span class="keyword">in</span> (<span class="number">10</span>,<span class="number">20</span>,<span class="number">30</span>);</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>index</p>
+<p>该联接类型与ALL相同，只是索引树被扫描。这通常比ALL快,因为索引文件通常比数据文件小。</p>
+</li>
+<li><p>ALL</p>
+<p>对于每个表进行全表扫描，可以添加索引来避免这个连接类型。</p>
+</li>
+</ul>
+<h3 id="额外信息"><a href="#额外信息" class="headerlink" title="额外信息"></a>额外信息</h3><p>Extra 字段中会显示执行计划中的额外信息。以下列表说明了此列中可能出现的值：</p>
+<ul>
+<li><p>Distinct</p>
+<p>MySQL正在寻找不重复的匹配值，因此它在找到第一个匹配行后停止搜索更多的匹配行。</p>
+</li>
+<li><p>Not exists</p>
+<p>MySQL对left join查询进行优化，发现1个匹配left join条件的行后，不再检查更多的行。</p>
+</li>
+<li><p>Range checked for each record (index map: <em>N</em>)</p>
+<p>MySQL没有发现较好的可以使用的索引，但发现如果来自前面的表的列值已知，可能部分索引可以使用。对于上表中的每个行组合，检查是否可以使用range或 index_merge连接类型来检索行。</p>
+<p>这虽然不是很快，但比执行没有索引的连接更快。、</p>
+<p>索引从1开始编号，顺序与表中<code>show index</code>显示的顺序相同。索引映射值 <em>N</em>指示哪些索引是候选。例如，值<code>0x19</code>（二进制11001）表示将考虑索引1,4和5。</p>
+</li>
+<li><p>Using filesort</p>
+<p>表示 MySQL 需额外的排序操作, 不能通过索引顺序达到排序效果。</p>
+</li>
+<li><p>Using index</p>
+<p>表示查询在索引树中就可查找所需数据, 不用扫描表数据文件, 使用覆盖索引。</p>
+</li>
+<li><p>Using index condition</p>
+<p>表示此查询用到了索引，但是需要查询表数据。</p>
+</li>
+<li><p>Using index for group-by</p>
+<p>类似于访问表的Using index方式，Using index for group-by表示MySQL发现了一个索引，可以用来查询GROUP BY或DISTINCT查询的所有列，而不要额外搜索硬盘访问实际的表。</p>
+</li>
+<li><p>Using temporary</p>
+<p>MySQL需要创建一个临时表来容纳结果。</p>
+</li>
+</ul>
+
+        </div>
+
+        <blockquote class="post-copyright">
+    
+    <div class="content">
+        
+
+        
+        以上便是本篇博客的所有内容，感谢阅读，如有疑惑可以留下你的评论，谢谢！<br> 本篇文章地址：<a href="/mysql/mysql-" target="_blank" rel="external">https://jinjinz.top/mysql/mysql-index.html</a>
+        
+    </div>
+    
+    <footer>
+        <a href="https://jinjinz.top">
+            <img src="/img/avatar.png" alt="Jin Jin">
+            Jin Jin
+        </a>
+    </footer>
+</blockquote>
+
+        
+<div class="page-reward">
+    <a id="rewardBtn" href="javascript:;" class="page-reward-btn waves-effect waves-circle waves-light">赏</a>
+</div>
+
+
+
+        <div class="post-footer">
+            
+	<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/MySQL/">MySQL</a></li></ul>
+
+
+            
+<div class="page-share-wrap">
+    
+
+<div class="page-share" id="pageShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=https://jinjinz.top/mysql/mysql-&title=《MySQL中的索引认识及优化》 — JinJin's Blog&pic=https://jinjinz.top/img/avatar.png" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=https://jinjinz.top/mysql/mysql-&title=《MySQL中的索引认识及优化》 — JinJin's Blog&source=分享Java相关技术,MySQL-锁-MVCC,设计模式,Spring源码分析" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=https://jinjinz.top/mysql/mysql-" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《MySQL中的索引认识及优化》 — JinJin's Blog&url=https://jinjinz.top/mysql/mysql-&via=https://jinjinz.top" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=https://jinjinz.top/mysql/mysql-" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+
+    <a href="javascript:;" id="shareFab" class="page-share-fab waves-effect waves-circle">
+        <i class="icon icon-share-alt icon-lg"></i>
+    </a>
+</div>
+
+
+
+        </div>
+    </div>
+
+    
+<nav class="post-nav flex-row flex-justify-between">
+  
+    <div class="waves-block waves-effect prev">
+      <a href="/mysql/mysql-innodb.html" id="post-prev" class="post-nav-link">
+        <div class="tips"><i class="icon icon-angle-left icon-lg icon-pr"></i> Prev</div>
+        <h4 class="title">Innodb中的锁机制及MVCC原理</h4>
+      </a>
+    </div>
+  
+
+  
+</nav>
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<section class="comments" id="comments">
+    <div id="gitalk-container"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+        var id = location.pathname
+        if (location.pathname.length > 50) {
+          id = location.pathname.replace(/\/\d+\/\d+\/\d+\//, '').replace('/', '').substring(0, 50)
+        }
+        const gitalk = new Gitalk({
+          clientID: '217672eb040280538293',
+          clientSecret: '5a950867142dbcfd9fdc3de4491455bd3651c1a8',
+          repo: 'jinzzzzz.github.io',
+          owner: 'jinzzzzz',
+          admin: ['jinzzzzz'],
+          id: id,      // Ensure uniqueness and length less than 50
+          title: document.title.split('|')[0],
+          distractionFreeMode: false  // Facebook-like distraction free mode
+        })
+
+        gitalk.render('gitalk-container')
+    </script>
+</section>
+
+
+
+
+</article>
+
+<div id="reward" class="page-modal reward-lay">
+    <a class="close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <h3 class="reward-title">
+        <i class="icon icon-quote-left"></i>
+        谢谢大爷~
+        <i class="icon icon-quote-right"></i>
+    </h3>
+    <div class="reward-content">
+        
+        <div class="reward-code">
+            <img id="rewardCode" src="/img/alipay.png" alt="打赏二维码">
+        </div>
+        
+    </div>
+</div>
+
+
+
+</div>
+
+        <footer class="footer">
+    <div class="top">
+        
+<p>
+    <span id="busuanzi_container_site_uv" style="display:none">
+        站点总访客数：<span id="busuanzi_value_site_uv"></span>
+    </span>
+    <span id="busuanzi_container_site_pv" style="display:none">
+        站点总访问量：<span id="busuanzi_value_site_pv"></span>
+    </span>
+</p>
+
+
+        <p>
+            
+                <span><a href="/atom.xml" target="_blank" class="rss" title="rss"><i class="icon icon-lg icon-rss"></i></a></span>
+            
+            <span>博客内容遵循 <a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh">知识共享 署名 - 非商业性 - 相同方式共享 4.0 国际协议</a></span>
+        </p>
+    </div>
+    <div class="bottom">
+        <p><span>Jin Jin &copy; 2019</span>
+            <span>
+                
+                Power by <a href="http://hexo.io/" target="_blank">Hexo</a> Theme <a href="https://github.com/yscoder/hexo-theme-indigo" target="_blank">indigo</a>
+            </span>
+        </p>
+    </div>
+</footer>
+
+    </main>
+    <div class="mask" id="mask"></div>
+<a href="javascript:;" id="gotop" class="waves-effect waves-circle waves-light"><span class="icon icon-lg icon-chevron-up"></span></a>
+
+
+
+<div class="global-share" id="globalShare">
+    <ul class="reset share-icons">
+      <li>
+        <a class="weibo share-sns" target="_blank" href="http://service.weibo.com/share/share.php?url=https://jinjinz.top/mysql/mysql-&title=《MySQL中的索引认识及优化》 — JinJin's Blog&pic=https://jinjinz.top/img/avatar.png" data-title="微博">
+          <i class="icon icon-weibo"></i>
+        </a>
+      </li>
+      <li>
+        <a class="weixin share-sns wxFab" href="javascript:;" data-title="微信">
+          <i class="icon icon-weixin"></i>
+        </a>
+      </li>
+      <li>
+        <a class="qq share-sns" target="_blank" href="http://connect.qq.com/widget/shareqq/index.html?url=https://jinjinz.top/mysql/mysql-&title=《MySQL中的索引认识及优化》 — JinJin's Blog&source=分享Java相关技术,MySQL-锁-MVCC,设计模式,Spring源码分析" data-title=" QQ">
+          <i class="icon icon-qq"></i>
+        </a>
+      </li>
+      <li>
+        <a class="facebook share-sns" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=https://jinjinz.top/mysql/mysql-" data-title=" Facebook">
+          <i class="icon icon-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a class="twitter share-sns" target="_blank" href="https://twitter.com/intent/tweet?text=《MySQL中的索引认识及优化》 — JinJin's Blog&url=https://jinjinz.top/mysql/mysql-&via=https://jinjinz.top" data-title=" Twitter">
+          <i class="icon icon-twitter"></i>
+        </a>
+      </li>
+      <li>
+        <a class="google share-sns" target="_blank" href="https://plus.google.com/share?url=https://jinjinz.top/mysql/mysql-" data-title=" Google+">
+          <i class="icon icon-google-plus"></i>
+        </a>
+      </li>
+    </ul>
+ </div>
+
+
+<div class="page-modal wx-share" id="wxShare">
+    <a class="close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAK4AAACuCAAAAACKZ2kyAAAB0ElEQVR42u3awa7CMAxEUf7/p4v0VixIOjOOXZ50s0JQyikLKxn79ZLX9bc+X3++s//W6nrlDuGCCxdumXtt1+rWq09X31Xuv78GLly481y3eCk/tn/U/TXL9+HChftjXHfTk5VCuHDh/i+usjVRDjajdRcuXLgFrn440YuXW+YOn9XgwoVb4GaB6dnX7fkuXLhwD3Ul3O2LUnquwoILF+4MVwksTpUz/RB1U+bgwoU7wlUKTTaEke25jMMPXLhw27huIXMDFPefu/HAhQt3hOtuZbK2ik60A1O4cOG2cbPRq/2tKwXxpizChQu3jauXHndUIhvbMooXXLhw27jZYJY9SnXoznDhwp3nusNYWbSahSZfUhy4cOG2ccPWphyAVpqpcOHCfZarHFEqAxnuEWj5K3Dhwh3husXL6MZk0x9KpAIXLtxmbhaVumGo+9hw4cL9Ba4bXlRKW6UIwoULd5KbjVZkEeqBeTG4cOE2c92CohD1YLTyKVy4cLu5btPUjUf15qu0eYILF+4gNxufqmxx9AOSlO/ChQv3Ia7+GGFX52whgwsX7iBXH6roODLBhQt3kltvr7qRqA4NYxG4cOEWuFlzNItC9AIKFy7ch7hvQuuVjL7DdagAAAAASUVORK5CYII=" alt="微信分享二维码">
+</div>
+
+
+
+
+    <script src="//cdn.bootcss.com/node-waves/0.7.4/waves.min.js"></script>
+<script>
+var BLOG = { ROOT: '/', SHARE: true, REWARD: true };
+
+
+</script>
+
+<script src="/js/main.min.js?v=1.7.2"></script>
+
+
+<div class="search-panel" id="search-panel">
+    <ul class="search-result" id="search-result"></ul>
+</div>
+<template id="search-tpl">
+<li class="item">
+    <a href="{path}" class="waves-block waves-effect">
+        <div class="title ellipsis" title="{title}">{title}</div>
+        <div class="flex-row flex-middle">
+            <div class="tags ellipsis">
+                {tags}
+            </div>
+            <time class="flex-col time">{date}</time>
+        </div>
+    </a>
+</li>
+</template>
+
+<script src="/js/search.min.js?v=1.7.2" async></script>
+
+
+
+
+
+
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+</body>
+</html>
